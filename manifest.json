@@ -1,0 +1,90 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Passimoritz/hostwerk-public/main/sdk/manifest.schema.json",
+  "id": "vuln-watch",
+  "name": {
+    "de": "Schwachstellen-Wache",
+    "en": "Vulnerability watch"
+  },
+  "description": {
+    "de": "Alle bekannten Schwachstellen (CVE, CVSS) deiner Dienste auf einen Blick – Webserver, PHP, Datenbanken, Laufzeiten, Docker-Images, Minecraft und Projekt-Abhängigkeiten, passend zur installierten Version. Mit „wird aktiv ausgenutzt“ (CISA KEV), Ausnutzungs-Wahrscheinlichkeit (EPSS), Lebensende, Update per Knopf, Ausnahmen und Benachrichtigung. Freie Quellen ohne Schlüssel: OSV.dev, NVD, CISA, FIRST.",
+    "en": "Every known vulnerability (CVE, CVSS) of your services at a glance – web servers, PHP, databases, runtimes, Docker images, Minecraft and project dependencies, matched to the installed version. With “actively exploited” (CISA KEV), likelihood of exploitation (EPSS), end of life, one-click updates, exceptions and alerts. Free sources without keys: OSV.dev, NVD, CISA, FIRST."
+  },
+  "version": "1.0.0",
+  "author": "Hostwerk",
+  "homepage": "https://github.com/Passimoritz/hostwerk-ext-vuln-watch",
+  "license": "MIT",
+  "icon": "icon.svg",
+  "banner": "banner.svg",
+  "color": "#be123c",
+  "category": "security",
+  "hostwerk": ">=2.11.0",
+  "permissions": [
+    "native",
+    "network"
+  ],
+  "network": [
+    "https://api.osv.dev",
+    "https://services.nvd.nist.gov",
+    "https://www.cisa.gov",
+    "https://api.first.org"
+  ],
+  "page": {
+    "title": {
+      "de": "Schwachstellen",
+      "en": "Vulnerabilities"
+    },
+    "description": {
+      "de": "Bekannte Lücken deiner Dienste, nach Schwere geordnet.",
+      "en": "Known flaws in your services, ordered by severity."
+    },
+    "icon": "shield",
+    "nav": {
+      "group": "system"
+    }
+  },
+  "backend": "server/index.js",
+  "ui": "ui/index.js",
+  "settingsTab": "notifications",
+  "settings": [
+    {
+      "key": "notify",
+      "type": "switch",
+      "label": {
+        "de": "Bei neuen kritischen oder ausgenutzten Schwachstellen benachrichtigen",
+        "en": "Notify me about new critical or exploited vulnerabilities"
+      },
+      "default": true
+    },
+    {
+      "key": "notifyHigh",
+      "type": "switch",
+      "label": {
+        "de": "Auch bei neuen Schwachstellen der Stufe „hoch“ benachrichtigen",
+        "en": "Also notify me about new “high” vulnerabilities"
+      },
+      "default": false
+    },
+    {
+      "key": "projects",
+      "type": "switch",
+      "label": {
+        "de": "Abhängigkeiten in Projekten mitprüfen (package-lock.json, composer.lock …)",
+        "en": "Also check dependencies in projects (package-lock.json, composer.lock …)"
+      },
+      "default": true
+    }
+  ],
+  "synergies": [
+    {
+      "with": "cert-watch",
+      "title": {
+        "de": "Sicherheit von zwei Seiten",
+        "en": "Security from two sides"
+      },
+      "text": {
+        "de": "„Zertifikats-Wache“ achtet auf ablaufende Zertifikate, „Schwachstellen-Wache“ auf bekannte Lücken in den Programmen dahinter.",
+        "en": "“Certificate watch” keeps an eye on expiring certificates, “Vulnerability watch” on known flaws in the programs behind them."
+      }
+    }
+  ]
+}
