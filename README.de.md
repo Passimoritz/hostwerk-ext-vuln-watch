@@ -8,6 +8,7 @@ Alle bekannten Schwachstellen (CVE, CVSS) deiner Dienste auf einen Blick – Web
 
 ## Was sie kann
 
+- **Wo:** System → Schwachstellen, dazu die Reiter in Webserver und Datenbanken – seit 1.1.0 ohne eigenen Seitenleisten-Eintrag; die ganze Seite bleibt unter Erweiterungen → Öffnen
 - **Übersicht** mit Ampel und Zahlen je Stufe (kritisch · hoch · mittel · niedrig), aktiv ausgenutzt, Lebensende und „Hostwerk behebt selbst“ – jede Zahl ist ein Filter
 - **Liste** nach Dienst oder nach Schwere gruppiert, mit Suche (CVE, Dienst, Paket) und Filtern: nur ausgenutzte, nur behebbare, Bereich, Ignorierte zeigen
 - **Detailansicht** je Schwachstelle: CVSS-Basiswert (v3.1/v4.0, wo vorhanden) mit Stufe, der Vektor in Worten (Angriff über das Netz? Anmeldung nötig? Muss jemand klicken?), CISA KEV mit Datum und Einsatz durch Erpressungs-Software, EPSS, betroffene und behobene Version, Links zu NVD, OSV und Hersteller

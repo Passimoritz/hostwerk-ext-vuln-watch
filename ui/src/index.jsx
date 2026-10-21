@@ -543,6 +543,9 @@ export default {
   pages: { main: VulnPage },
   slots: {
     'dashboard.tiles': [{ id: 'vulns', title: 'Vulnerabilities', icon: ShieldAlert, size: 'third', Component: VulnTile }],
+    // Seit Hostwerk 3.0 (SDK 3.2) ohne eigenen Seitenleisten-Eintrag ("nav": false) – die ganze Seite als Reiter im passenden Bereich;
+    // Hostwerk blendet dabei ihren Titel aus (Reiter + Herkunftszeile sagen schon, was es ist), die Knöpfe bleiben
+    'system.tabs': [{ id: 'vulns', title: 'Vulnerabilities', icon: ShieldAlert, Component: VulnPage, order: 45 }],
     'web.tabs': [{ id: 'vulns', title: 'Vulnerabilities', icon: ShieldAlert, Component: areaTab(['web', 'php']), order: 80 }],
     'dbs.tabs': [{ id: 'vulns', title: 'Vulnerabilities', icon: ShieldAlert, Component: areaTab(['dbs']), order: 80 }],
   },
