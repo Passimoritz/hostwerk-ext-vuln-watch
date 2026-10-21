@@ -64,8 +64,9 @@ class Net {
         });
       } catch (e) {
         if (e && e.code === 'HW_OFFLINE') throw e; // Hostwerks Wächter um fetch
-        if (attempt >= 1) throw Object.assign(new Error(`${host} is not reachable: ${e.message}`), { code: 'NETWORK' });
-        await this.sleep(pol.backoff[0]);
+        // Abgebrochene Verbindungen kommen bei der NVD ohne Schlüssel immer wieder vor – mehrmals mit Pause versuchen
+        if (attempt >= pol.backoff.length - 1) throw Object.assign(new Error(`${host} is not reachable: ${e.message}`), { code: 'NETWORK' });
+        await this.sleep(pol.backoff[attempt]);
         continue;
       }
       if (res.status === 429 || res.status === 403 || res.status === 503) {

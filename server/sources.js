@@ -194,7 +194,7 @@ class Sources {
       }
     }
     if (stop) this.fail('nvd', stop);
-    else if (!failed.length) this.ok('nvd', { products: products.length });
+    else if (!failed.length) this.ok('nvd', { products: products.length, failed: 0 });
     else if (done.length) this.mark('nvd', { at: this.now(), failed: failed.length }); // Teilerfolg: Fehler bleibt sichtbar
     return done;
   }
