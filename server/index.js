@@ -10,6 +10,8 @@
  * Täglich im Hintergrund: Bestand ermitteln (inventory.js), Quellen nachfragen (sources.js – OSV, NVD, CISA KEV, FIRST EPSS,
  * gedrosselt und zwischengespeichert), bewerten (assess.js), neue kritische oder ausgenutzte Funde gebündelt melden.
  * Offline-Modus: keine Abfragen, der letzte Stand bleibt sichtbar. Daten: data/vuln-watch/
+ * Seit 1.2: Hostwerks stabile Dienste (SDK 3.3) – host.updates, host.ai.quick, host.net.offline, host.minecraft.addons,
+ * host.images.list –, auf älteren Hostwerk-Versionen die bisherigen Wege als Rückfall (host.supports sagt, was geht).
  */
 const path = require('path');
 const { Store } = require('./store');
@@ -31,7 +33,9 @@ function createService(host, io = {}) {
   const { ctx } = host;
   const now = io.now || (() => Date.now());
   const store = new Store(path.join(ctx.paths.data, 'vuln-watch'));
-  const offline = io.offline || (() => { try { return host.core('download').isOffline(); } catch { return false; } });
+  /** Stabiler Dienst vorhanden UND erlaubt? (SDK 3.3) */
+  const can = (name) => { try { return typeof host.supports === 'function' && host.supports(name) === true; } catch { return false; } };
+  const offline = io.offline || (() => { try { return can('net.offline') ? host.net.offline() === true : host.core('download').isOffline(); } catch { return false; } });
   const net = new Net({ fetch: io.fetch, now, sleep: io.sleep, offline });
   const src = new Sources({ net, store, now });
   const settings = () => {
@@ -47,7 +51,10 @@ function createService(host, io = {}) {
   try { if (host.notifications && typeof host.notifications.register === 'function') { host.notifications.register('new-findings', { de: 'Neue kritische oder ausgenutzte Schwachstellen', en: 'New critical or exploited vulnerabilities' }, { on: true }); ownEvent = true; } } catch { /* ältere Hostwerk-Version */ }
 
   const ownVersions = () => ({ node: process.versions.node, electron: process.versions.electron || null });
-  const pending = () => { try { return (ctx.patchUpdates && ctx.patchUpdates.pending) || []; } catch { return []; } };
+  // Anstehende Sicherheits-Updates: stabiler Dienst (asynchron, vor jeder Runde geholt) oder der bisherige Weg
+  let pendingNow = null;
+  const refreshPending = async () => { if (!can('updates.pending')) return; try { pendingNow = await host.updates.pending(); } catch { pendingNow = null; } };
+  const pending = () => { if (pendingNow) return pendingNow; try { return (ctx.patchUpdates && ctx.patchUpdates.pending) || []; } catch { return []; } };
   const eolInfo = () => (ctx.eol && typeof ctx.eol.info === 'function' ? (p, v) => ctx.eol.info(p, v) : null);
   const platform = io.platform || process.platform;
 
@@ -80,7 +87,8 @@ function createService(host, io = {}) {
     if (running) return running;
     running = (async () => {
       const cfg = settings();
-      const inv = await (io.collect || collect)(ctx, { projects: cfg.projects, ownVersions: ownVersions() });
+      await refreshPending();
+      const inv = await (io.collect || collect)(ctx, { projects: cfg.projects, ownVersions: ownVersions(), sdk: host });
       const items = inv.items;
       store.set('inventory', items);
       if (offline()) {
@@ -153,7 +161,16 @@ function createService(host, io = {}) {
 
   const detail = (key) => (state().findings || []).find((f) => f.key === key) || null;
 
-  return { run, view, detail, reassess, settings, store, src, net, ignores, due: () => !state().at || now() - state().at > DUE };
+  /** Sicherheits-Update über Hostwerk einspielen – stabiler Dienst (Recht change:updates) oder der bisherige Weg. */
+  const applyUpdate = async (key) => {
+    if (can('updates.apply')) return host.updates.apply(key);
+    if (!ctx.patchUpdates || typeof ctx.patchUpdates.apply !== 'function') throw host.error(409, 'Security updates are not available in this Hostwerk version.');
+    return ctx.patchUpdates.apply(key);
+  };
+  /** KI-Helfer für Kurztexte – stabiler Dienst (Recht use:ai) oder der bisherige Weg; null = nicht da. */
+  const aiQuick = () => (can('ai.quick') ? host.ai.quick : (ctx.ai && ctx.ai.quick) || null);
+
+  return { run, view, detail, reassess, settings, store, src, net, ignores, applyUpdate, aiQuick, due: () => !state().at || now() - state().at > DUE };
 }
 
 function activate(host) {
@@ -186,22 +203,21 @@ function activate(host) {
       const key = String((req.body || {}).key || '');
       const f = (svc.view().findings || []).find((x) => x.fix && x.fix.kind === 'patch' && x.fix.key === key);
       if (!f) throw host.error(404, 'Hostwerk cannot install an update for this right now.');
-      if (!host.ctx.patchUpdates || typeof host.ctx.patchUpdates.apply !== 'function') throw host.error(409, 'Security updates are not available in this Hostwerk version.');
-      const r2 = await host.ctx.patchUpdates.apply(key);
+      const r2 = await svc.applyUpdate(key);
       await svc.run();
       res.json({ result: { ok: !!r2.ok, skipped: !!r2.skipped, error: r2.error || null }, ...svc.view() });
     } catch (e) { next(e); }
   });
   r.get('/vuln-watch/ai', async (req, res) => {
     let ready = false;
-    try { ready = !!(host.ctx.ai && host.ctx.ai.quick && await host.ctx.ai.quick.ready()); } catch { /* aus */ }
+    try { const q = svc.aiQuick(); ready = !!(q && await q.ready()); } catch { /* aus */ }
     res.json({ ready });
   });
   r.post('/vuln-watch/ai', async (req, res, next) => {
     try {
       const f = svc.detail(String((req.body || {}).key || ''));
       if (!f) throw host.error(404, 'Finding not found – check again.');
-      const q = host.ctx.ai && host.ctx.ai.quick;
+      const q = svc.aiQuick();
       if (!q) throw host.error(409, 'The AI assistant is not ready.');
       const lang = host.lang();
       const text = `${f.id}${f.score != null ? ` (CVSS ${f.score})` : ''} – ${f.itemName} ${f.pkg ? `${f.pkg.name} ${f.pkg.version}` : f.version || ''}\n${f.title || ''}\n${f.details || ''}`;

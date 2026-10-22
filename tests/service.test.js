@@ -207,3 +207,41 @@ test('assess: Texte für Hinweise und Behebung, Ampel ohne Funde', () => {
   assert.strictEqual(r.findings[0].fix.kind, 'manual');
   assert.strictEqual(r.findings[0].fixed, '10.6.13');
 });
+
+test('Stabile Dienste (SDK 3.3): Updates, KI und Offline über host – Interna bleiben unberührt', async () => {
+  const c = clock();
+  const fh = fakeHost({ pending: [] }); // Kern-Interna: leer – alles muss über die stabilen Dienste kommen
+  const applied = [];
+  const sdkPending = [{ key: 'php-8.1', component: 'php', label: 'PHP 8.1', current: '8.1.0', latest: '8.1.29' }];
+  Object.assign(fh.host, {
+    supports: (n) => ['updates.pending', 'updates.apply', 'ai.quick', 'net.offline'].includes(n),
+    updates: { pending: async () => sdkPending, apply: async (k) => { applied.push(k); return { ok: true, skipped: false, error: null }; } },
+    ai: { quick: { ready: async () => true, run: async (task, o) => ({ text: `${task}:${o.lang}` }) } },
+    net: { offline: () => false },
+    core: () => { throw new Error('Kern-Interna dürfen nicht gefragt werden'); },
+  });
+  fh.host.ctx.patchUpdates = { pending: [], apply: async () => { throw new Error('alter Weg'); } };
+  const svc = createService(fh.host, { fetch: fakeFetch(sources()), now: c.now, sleep: c.sleep, collect: inventory, platform: 'linux' });
+  await svc.run();
+  const php = svc.view().findings.find((f) => f.cve === 'CVE-2024-4577');
+  assert.ok(php && php.fix && php.fix.kind === 'patch' && php.fix.key === 'php-8.1', 'Behebung aus host.updates.pending()');
+  assert.deepStrictEqual(await svc.applyUpdate('php-8.1'), { ok: true, skipped: false, error: null });
+  assert.deepStrictEqual(applied, ['php-8.1']);
+  assert.strictEqual((await svc.aiQuick().run('summarize', { lang: 'de' })).text, 'summarize:de');
+  assert.strictEqual(svc.view().offline, false);
+  cleanup();
+});
+
+test('Ältere Hostwerk-Version ohne stabile Dienste: Rückfall auf die bisherigen Wege', async () => {
+  const c = clock();
+  const fh = fakeHost({ pending: [{ key: 'php-8.1', current: '8.1.0', latest: '8.1.29' }] });
+  const applied = [];
+  fh.host.ctx.patchUpdates.apply = async (k) => { applied.push(k); return { ok: true }; };
+  const svc = createService(fh.host, { fetch: fakeFetch(sources()), now: c.now, sleep: c.sleep, collect: inventory, platform: 'linux' });
+  await svc.run();
+  assert.ok(svc.view().findings.some((f) => f.fix && f.fix.kind === 'patch'));
+  await svc.applyUpdate('php-8.1');
+  assert.deepStrictEqual(applied, ['php-8.1']);
+  assert.strictEqual(svc.aiQuick(), null, 'ohne KI im Kontext: nicht bereit');
+  cleanup();
+});

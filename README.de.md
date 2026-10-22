@@ -30,8 +30,9 @@ Alle bekannten Schwachstellen (CVE, CVSS) deiner Dienste auf einen Blick – Web
 | MariaDB, MySQL, PostgreSQL, MongoDB, Redis | Hostwerks Datenbanken | NVD + Lebensende |
 | Node.js, Python, Go | Laufzeiten, die Hostwerk für Apps geladen hat | NVD (`nodejs:node.js`, `python:python`), OSV (`Go/stdlib`) |
 | Java | Laufzeiten, Minecraft | nur Lebensende |
-| Docker-Apps | `image:tag` offizieller Images (`redis:7.2.4-alpine` → Redis 7.2.4) | wie das Programm |
+| Docker-Apps, Compose-Stapel, Spiele-Server in Docker | `image:tag` offizieller Images (`redis:7.2.4-alpine` → Redis 7.2.4) – Compose-Stapel und Spiele-Server-Images über Hostwerk 3.0+ | wie das Programm |
 | Minecraft-Server | Art und Version | Log4Shell (1.7–1.18.0); Plugins stehen mit Version im Bestand |
+| Spiele-Server | Steam-Build-ID (Erweiterung „Spiele-Server“ ab 1.10) | mit Version im Bestand, ohne Prüfung (keine Datenbank für Spiele) |
 | Hostwerk selbst | Node.js und Electron, auf denen es läuft | NVD, OSV (`npm/electron`) + Lebensende |
 | Projekte | `package-lock.json`, `composer.lock`, `poetry.lock`, `requirements.txt` (`==`), `go.mod`, `Cargo.lock` | OSV (npm, Packagist, PyPI, Go, crates.io) |
 
@@ -54,6 +55,10 @@ Keine Schlüssel, keine Konten. Abfragen werden gebündelt und gedrosselt (NVD o
 - CVSS-4.0-Basiswerte kommen von der Quelle; fehlt einer, zählt die Stufe der Quelle (v4 selbst zu berechnen bräuchte die große Tabelle von FIRST).
 - CPE-Angaben der NVD sind manchmal lückenhaft oder kommen bei neuen CVEs spät; OSV deckt Pakete besser ab als Server-Programme.
 - Keine CPE/Datenbank für: Garnet, Bun, Deno, .NET, Java-Distributionen (Temurin), Spiele-Server, Minecraft-Plugins.
+
+## Voraussetzungen
+
+Hostwerk 3.0 oder neuer. Sie nutzt Hostwerks stabile Dienste (SDK 3.3) – Sicherheits-Updates (`read:updates`, `change:updates`), den KI-Helfer für Kurzfassungen (`use:ai`), Plugin-Versionen (`read:minecraft`) und Docker-Images (`read:apps`); alles nur lesend außer dem Einspielen eines Updates, das du anklickst.
 
 ## Installieren
 

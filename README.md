@@ -30,8 +30,9 @@ Every known vulnerability (CVE, CVSS) of your services at a glance – web serve
 | MariaDB, MySQL, PostgreSQL, MongoDB, Redis | Hostwerk’s databases | NVD + end of life |
 | Node.js, Python, Go | runtimes Hostwerk loaded for apps | NVD (`nodejs:node.js`, `python:python`), OSV (`Go/stdlib`) |
 | Java | runtimes, Minecraft | end of life only |
-| Docker apps | `image:tag` of official images (`redis:7.2.4-alpine` → Redis 7.2.4) | like the program |
+| Docker apps, Compose stacks, game servers in Docker | `image:tag` of official images (`redis:7.2.4-alpine` → Redis 7.2.4) – Compose stacks and game-server images through Hostwerk 3.0+ | like the program |
 | Minecraft servers | type and version | Log4Shell (1.7–1.18.0); plugins are listed with their version |
+| Game servers | Steam build id (extension “Game servers” 1.10+) | listed with version, without check (no database for games) |
 | Hostwerk itself | Node.js and Electron it runs on | NVD, OSV (`npm/electron`) + end of life |
 | Projects | `package-lock.json`, `composer.lock`, `poetry.lock`, `requirements.txt` (`==`), `go.mod`, `Cargo.lock` | OSV (npm, Packagist, PyPI, Go, crates.io) |
 
@@ -54,6 +55,10 @@ No keys, no accounts. Requests are bundled and throttled (NVD without a key: at 
 - CVSS 4.0 base scores come from the source; without one, the level from the source counts (computing v4 locally would need FIRST’s large lookup table).
 - NVD CPE data are sometimes incomplete or late for new CVEs; OSV covers packages better than server programs.
 - No CPE/database for: Garnet, Bun, Deno, .NET, Java distributions (Temurin), game servers, Minecraft plugins.
+
+## Requirements
+
+Hostwerk 3.0 or newer. It uses Hostwerk’s stable services (SDK 3.3) – security updates (`read:updates`, `change:updates`), the AI assistant for short summaries (`use:ai`), plugin versions (`read:minecraft`) and Docker images (`read:apps`); all read only except installing an update you clicked.
 
 ## Install
 

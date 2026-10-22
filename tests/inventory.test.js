@@ -125,3 +125,31 @@ test('readProject: kaputte Datei wird übersprungen, Doppelte zusammengelegt', (
   assert.strictEqual(r.packages[0].dev, false);
   assert.match(r.notes[0], /package-lock\.json/);
 });
+
+test('Bestand über stabile Dienste (SDK 3.3): Plugins, Compose- und Spiele-Images, Spiele mit Build-ID', async () => {
+  const ctx = fakeCtx();
+  ctx.minecraft.addonDir = () => { throw new Error('Interna dürfen nicht gefragt werden'); };
+  ctx.games = { summary: () => [{ id: 'valheim', name: 'Valheim', game: 'vhserver', version: '16450218', versionKind: 'steam-build', docker: true, image: 'gameservermanagers/gameserver:vh' }, { id: 'old', name: 'Alt', game: 'x' }] };
+  const sdk = {
+    supports: (n) => ['minecraft.addons', 'images.list'].includes(n),
+    minecraft: { addons: async () => [{ file: 'LuckPerms.jar', name: 'LuckPerms', version: '5.4.102', enabled: true, kind: 'plugin' }, { file: 'Off.jar.disabled', name: 'Off', version: '1', enabled: false, kind: 'plugin' }] },
+    images: { list: async () => [
+      { source: 'app', owner: 'cache', name: 'Cache', image: 'redis:7.2.4-alpine', repo: 'redis', tag: '7.2.4-alpine', digest: null },
+      { source: 'compose', owner: '/proj/stack', name: 'stack › db', image: 'postgres:16.4', repo: 'postgres', tag: '16.4', digest: null, service: 'db' },
+      { source: 'compose', owner: '/proj/stack', name: 'stack › app', image: 'ghcr.io/acme/app:${TAG}', repo: 'ghcr.io/acme/app', tag: null, digest: null, service: 'app' },
+      { source: 'game', owner: 'valheim', name: 'Valheim', image: 'gameservermanagers/gameserver:vh', repo: 'gameservermanagers/gameserver', tag: 'vh', digest: null },
+    ] },
+  };
+  const { items } = await collect(ctx, { readFile: () => { throw new Error('x'); }, projects: false, sdk });
+  const by = (id) => items.find((x) => x.id === id);
+  assert.strictEqual(by('mc:lobby:LuckPerms.jar').version, '5.4.102');
+  assert.ok(!items.some((x) => /Off\.jar/.test(x.id)), 'ausgeschaltete Plugins wie bisher nicht');
+  assert.deepStrictEqual([by('game:valheim').version, by('game:valheim').why], ['16450218', 'no-database']);
+  assert.strictEqual(by('game:old').why, 'no-version');
+  const db = by('image:compose:/proj/stack:db');
+  assert.deepStrictEqual([db.product, db.version, db.why, db.area], ['postgres', '16.4', null, 'apps']);
+  assert.strictEqual(by('image:compose:/proj/stack:app').why, 'no-database');
+  const gi = by('image:game:valheim:gameservermanagers/gameserver');
+  assert.deepStrictEqual([gi.area, gi.why, gi.parent], ['games', 'no-database', 'game:valheim']);
+  assert.strictEqual(items.filter((x) => x.image === 'redis:7.2.4-alpine').length, 1, 'Docker-Apps nicht doppelt');
+});

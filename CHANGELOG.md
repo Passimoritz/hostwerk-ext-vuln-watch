@@ -1,3 +1,8 @@
+## 1.2.0
+
+- More versions: images of Compose stacks and of game servers in Docker are checked like Docker apps (official images with a version in the tag), all others appear honestly as “without check”; game servers show their Steam build id (extension “Game servers” 1.10+). / Mehr Versionen: Images aus Compose-Stapeln und von Spiele-Servern in Docker werden wie Docker-Apps geprüft (offizielle Images mit Versionsnummer im Tag), alle anderen erscheinen ehrlich „ohne Prüfung“; Spiele-Server zeigen ihre Steam-Build-ID (Erweiterung „Spiele-Server“ ab 1.10).
+- Uses Hostwerk’s stable services (SDK 3.3) instead of internals: security updates (`host.updates`), AI summaries (`host.ai.quick`), offline mode (`host.net.offline`), plugin versions (`host.minecraft.addons`), Docker images (`host.images.list`) – with permissions you see before installing; the old ways stay as fallback. Needs Hostwerk 3.0+. / Nutzt Hostwerks stabile Dienste (SDK 3.3) statt Interna: Sicherheits-Updates (`host.updates`), KI-Kurzfassungen (`host.ai.quick`), Offline-Modus (`host.net.offline`), Plugin-Versionen (`host.minecraft.addons`), Docker-Images (`host.images.list`) – mit Rechten, die du vor dem Installieren siehst; die alten Wege bleiben als Rückfall. Braucht Hostwerk 3.0+.
+
 ## 1.1.1
 
 - Long finding titles show in full as a tooltip instead of being cut off silently / Lange Fund-Titel zeigen sich beim Darüberfahren ganz, statt still abgeschnitten zu werden

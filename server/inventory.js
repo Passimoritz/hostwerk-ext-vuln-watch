@@ -3,6 +3,8 @@
  * Bestand: alles, was in Hostwerk installiert ist oder läuft – mit Version. Nur lesen, nichts starten.
  * Quellen sind Hostwerks eigene Verwaltungen (dieselben, die auch /overview, Sicherheits-Updates und die Lebensende-Wache
  * nutzen): ctx.web, ctx.dbm, ctx.services.php, ctx.apps (+ Laufzeiten), ctx.minecraft, ctx.games, ctx.devtools.
+ * Seit 1.2 (Hostwerk mit SDK 3.3) über die stabilen Dienste, wo vorhanden: opts.sdk = host – host.minecraft.addons()
+ * für Plugin-Versionen, host.images.list() für Images aus Compose-Stapeln und Docker-Spiele-Servern; sonst wie bisher.
  *
  * Eintrag: { id, area, kind, product, name, version, ver: clean(version), href, updateKey, exposure, modules, packages, why }
  *   area     – Bereich in Hostwerk (web, dbs, php, runtimes, minecraft, apps, games, system, projects) für Filter und Reiter
@@ -46,8 +48,11 @@ function item(base) {
   return { exposure: null, modules: null, updateKey: null, href: null, ...base, ver, why };
 }
 
+/** Stabiler Dienst vorhanden UND erlaubt? (host.supports, SDK 3.3 – ältere Hostwerk-Versionen: nein) */
+const can = (sdk, name) => { try { return !!(sdk && typeof sdk.supports === 'function' && sdk.supports(name)); } catch { return false; } };
+
 /**
- * Bestand ermitteln. opts: { projects: true, plugins: true, readFile, readdir, ownVersions: { node, electron } }
+ * Bestand ermitteln. opts: { projects: true, plugins: true, readFile, readdir, ownVersions: { node, electron }, sdk }
  * Gibt { items, notes } zurück – notes erklären Lücken (z. B. Erweiterung „Spiele-Server“ ohne Versionen).
  */
 async function collect(ctx, opts = {}) {
@@ -100,9 +105,19 @@ async function collect(ctx, opts = {}) {
     }));
   }
   // Minecraft-Server und ihre Plugins/Mods (Versionen aus plugin.yml & Co.)
+  const sdk = opts.sdk || null;
   for (const s of safe(() => ctx.minecraft.list(), [])) {
     items.push(item({ id: `mc:${s.id}`, area: 'minecraft', kind: 'minecraft', product: 'minecraft', name: s.name || s.id, version: s.version, flavor: s.type, build: s.build || null, href: `#/mc/${encodeURIComponent(s.id)}` }));
     if (opts.plugins === false) continue;
+    if (can(sdk, 'minecraft.addons')) {
+      // Stabiler Dienst (SDK 3.3): Name und Version aus plugin.yml/mods.toml, nur lesen
+      let list = [];
+      try { list = await sdk.minecraft.addons(s.id); } catch { list = []; }
+      for (const a of (list || []).filter((x) => /\.jar$/i.test(x.file)).slice(0, 200)) {
+        items.push(item({ id: `mc:${s.id}:${a.file}`, area: 'minecraft', kind: 'plugin', product: null, name: a.name || a.file.replace(/\.jar$/i, ''), version: a.version || null, parent: `mc:${s.id}`, href: `#/mc/${encodeURIComponent(s.id)}`, why: 'no-database' }));
+      }
+      continue;
+    }
     const dir = safe(() => ctx.minecraft.addonDir(s.id), null);
     const files = dir ? safe(() => readdir(dir).filter((f) => /\.jar$/i.test(f)), []) : [];
     for (const f of files.slice(0, 200)) {
@@ -112,9 +127,29 @@ async function collect(ctx, opts = {}) {
       items.push(item({ id: `mc:${s.id}:${f}`, area: 'minecraft', kind: 'plugin', product: null, name, version: meta && meta.version, parent: `mc:${s.id}`, href: `#/mc/${encodeURIComponent(s.id)}`, why: 'no-database' }));
     }
   }
-  // Spiele-Server (Erweiterung „Spiele-Server“) – Versionen verraten sie nicht
+  // Spiele-Server (Erweiterung „Spiele-Server“) – ab deren 1.10 mit Steam-Build-ID. Für Spiele gibt es keine
+  // Schwachstellen-Datenbank: mit Version „ohne Prüfung“ (no-database), ohne Version wie bisher (no-version)
   for (const g of safe(() => (ctx.games && typeof ctx.games.summary === 'function' ? ctx.games.summary() : []), [])) {
-    items.push(item({ id: `game:${g.id}`, area: 'games', kind: 'game', product: null, name: g.name || g.game || g.id, version: null, game: g.game, href: `#/spiele/${encodeURIComponent(g.id)}`, why: 'no-version' }));
+    const version = g.version ? String(g.version) : null;
+    items.push(item({ id: `game:${g.id}`, area: 'games', kind: 'game', product: null, name: g.name || g.game || g.id, version, versionKind: g.versionKind || null, game: g.game, image: g.image || null, href: `#/spiele/${encodeURIComponent(g.id)}`, why: version ? 'no-database' : 'no-version' }));
+  }
+  // Images aus Compose-Stapeln und Docker-Spiele-Servern (stabiler Dienst, SDK 3.3) – offizielle Images mit Versionsnummer
+  // im Tag werden wie das Programm geprüft, alle anderen erscheinen ehrlich „ohne Prüfung“. Docker-Apps stehen schon oben.
+  if (can(sdk, 'images.list')) {
+    let imgs = [];
+    try { imgs = await sdk.images.list(); } catch { imgs = []; }
+    const seen = new Set();
+    for (const i of imgs || []) {
+      if (!i || !i.image || i.source === 'app') continue;
+      const key = `${i.source}:${i.owner}:${i.image}`;
+      if (seen.has(key)) continue; seen.add(key);
+      const d = i.tag ? dockerImage(`${i.repo}:${i.tag}`) : null;
+      items.push(item({
+        id: `image:${i.source}:${i.owner}:${i.service || i.repo}`, area: i.source === 'game' ? 'games' : 'apps', kind: 'docker', product: d && d.product, name: i.name || i.image, version: d && d.version, image: i.image,
+        href: i.source === 'game' ? `#/spiele/${encodeURIComponent(i.owner)}` : '#/apps', parent: i.source === 'game' ? `game:${i.owner}` : null,
+        why: !d || !d.product ? 'no-database' : !d.version ? 'no-version' : null,
+      }));
+    }
   }
   // Hostwerk selbst: eigene Node-Laufzeit und Electron
   const own = opts.ownVersions || {};
