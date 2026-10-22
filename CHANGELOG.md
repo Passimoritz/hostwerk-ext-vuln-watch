@@ -1,3 +1,7 @@
+## 1.1.1
+
+- Long finding titles show in full as a tooltip instead of being cut off silently / Lange Fund-Titel zeigen sich beim Darüberfahren ganz, statt still abgeschnitten zu werden
+
 ## 1.1.0
 
 - Lives where it belongs: System → Vulnerabilities, plus the tabs in Web servers and Databases – no own sidebar entry any more (Hostwerk 3.0+); the full page stays under Extensions → Open and can be pinned in the sidebar settings. / Steckt jetzt dort, wo sie hingehört: System → Schwachstellen, dazu die Reiter in Webserver und Datenbanken – kein eigener Seitenleisten-Eintrag mehr (Hostwerk 3.0+); die ganze Seite bleibt unter Erweiterungen → Öffnen und lässt sich in den Seitenleisten-Einstellungen anheften.

@@ -130,7 +130,7 @@ function FindingRow({ f, onOpen, onIgnore }) {
       <button type="button" className={`vw-row ${f.ignored ? 'vw-row-ignored' : ''}`} onClick={() => onOpen(f)} onContextMenu={menu}>
         <LevelBadge f={f} />
         <span className="vw-row-main">
-          <span className="vw-row-title ellipsis">{titleOf(f)}</span>
+          <span className="vw-row-title ellipsis" title={titleOf(f)}>{titleOf(f)}</span>
           <span className="tiny muted vw-row-sub">
             {f.kind === 'vuln' && <span className="mono">{f.id}</span>}
             {f.pkg && <span className="mono">{f.pkg.name} {f.pkg.version}</span>}
