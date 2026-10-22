@@ -1,6 +1,6 @@
 ## 1.3.0
 
-- Fits on one screen: services on the left with their counters, findings of the chosen service on the right – both lists scroll on their own, the page stays put; “by severity” shows one area with groups you can fold (exploited and critical open); verdict and counters as one compact bar, “What is checked” opens as a dialog / Passt auf einen Bildschirm: links die Dienste mit Zählern, rechts die Funde des gewählten Dienstes – beide Listen scrollen für sich, die Seite bleibt stehen; „nach Schwere“ zeigt eine Fläche mit zuklappbaren Gruppen (ausgenutzt und kritisch offen); Urteil und Zähler als eine schmale Leiste, „Was wird geprüft“ öffnet als Dialog
+- Fits on one screen: services on the left with their counters, findings of the chosen service on the right – both lists scroll on their own, the page stays put; “by severity” shows one area with groups you can fold (exploited and critical open); verdict and counters as one compact bar, “What is checked” opens as a dialog; explanations (verdict, sources, CVSS, EPSS, AI summary) sit behind an ⓘ instead of taking whole lines / Passt auf einen Bildschirm: links die Dienste mit Zählern, rechts die Funde des gewählten Dienstes – beide Listen scrollen für sich, die Seite bleibt stehen; „nach Schwere“ zeigt eine Fläche mit zuklappbaren Gruppen (ausgenutzt und kritisch offen); Urteil und Zähler als eine schmale Leiste, „Was wird geprüft“ öffnet als Dialog; Erklärungen (Urteil, Quellen, CVSS, EPSS, KI-Kurzfassung) stehen hinter einem ⓘ statt ganze Zeilen zu belegen
 
 ## 1.2.0
 

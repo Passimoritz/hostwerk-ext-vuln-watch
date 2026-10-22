@@ -101,9 +101,9 @@ function Summary({ d, filter, setFilter }) {
   return (
     <div className="vw-summary">
       <div className={`card vw-overall vw-overall-${d.overall || 'ok'}`}>
-        <Lights overall={d.overall || 'ok'} />
+        <Lights overall={d.overall || 'ok'} size="sm" />
         <div className="grow vw-overall-text">
-          <h2 className="row-tight">{t(o.title)}<InfoTip inline title={t(o.title)}>{t(o.text)}</InfoTip></h2>
+          <h2 className="row-tight">{t(o.title)}<InfoTip pop title={t(o.title)}>{t(o.text)}</InfoTip></h2>
           <p className="tiny muted">{d.at ? t('Checked {when}', { when: fmtDate(d.at) }) : t('Not checked yet')}</p>
         </div>
       </div>
@@ -258,7 +258,7 @@ function AiSummary({ f, lang, ready }) {
   if (!st) return <Btn className="ghost sm ai" icon={Sparkles} onClick={run}>Summarize in plain words</Btn>;
   return (
     <div className="vw-ai" aria-live="polite">
-      <div className="tiny muted row-tight"><Languages size={13} aria-hidden="true" />{lang === 'en' ? t('AI summary') : t('AI translation and summary')}<InfoTip inline title={t('AI summary')}>Written by Hostwerk’s AI assistant from the original text below. It can be wrong – the original counts.</InfoTip></div>
+      <div className="tiny muted row-tight"><Languages size={13} aria-hidden="true" />{lang === 'en' ? t('AI summary') : t('AI translation and summary')}<InfoTip pop title={t('AI summary')}>Written by Hostwerk’s AI assistant from the original text below. It can be wrong – the original counts.</InfoTip></div>
       {st === 'busy' ? <p className="small muted">{t('The AI is reading …')}</p> : st.error ? <p className="small c-warn">{st.error}</p> : <p className="small vw-pre">{st.text}</p>}
     </div>
   );
@@ -312,7 +312,7 @@ function Detail({ fKey, lang, aiReady, onClose, onChanged, onUpdate, busyKey }) 
 
           {parts.length > 0 && (
             <section className="vw-sec">
-              <h4 className="row-tight">How an attack works<InfoTip inline title="CVSS">CVSS describes a vulnerability with a few features. The base score (0–10) combines them – it says how bad the flaw is in general, not how exposed your computer is.</InfoTip></h4>
+              <h4 className="row-tight">How an attack works<InfoTip pop title="CVSS">CVSS describes a vulnerability with a few features. The base score (0–10) combines them – it says how bad the flaw is in general, not how exposed your computer is.</InfoTip></h4>
               <dl className="vw-cvss">
                 {parts.map((x) => (
                   <div key={x.key} className={`vw-cvss-${x.risk}`}>
@@ -327,7 +327,7 @@ function Detail({ fKey, lang, aiReady, onClose, onChanged, onUpdate, busyKey }) 
 
           {f.epss && (
             <section className="vw-sec">
-              <h4 className="row-tight">Likelihood of exploitation<InfoTip inline title="EPSS">FIRST’s Exploit Prediction Scoring System estimates how likely an attack on this vulnerability is within the next 30 days.</InfoTip></h4>
+              <h4 className="row-tight">Likelihood of exploitation<InfoTip pop title="EPSS">FIRST’s Exploit Prediction Scoring System estimates how likely an attack on this vulnerability is within the next 30 days.</InfoTip></h4>
               <div className="vw-epss-bar" role="progressbar" aria-label="EPSS" aria-valuenow={Math.round(f.epss.epss * 100)} aria-valuemin={0} aria-valuemax={100}><div style={{ width: `${Math.max(1, Math.round(f.epss.epss * 100))}%` }} /></div>
               <p className="small">{t('{p} within the next 30 days – higher than {q} of all known vulnerabilities.', { p: pct(f.epss.epss), q: pct(f.epss.pct) })}</p>
             </section>
@@ -352,7 +352,7 @@ function Detail({ fKey, lang, aiReady, onClose, onChanged, onUpdate, busyKey }) 
           </section>
 
           <section className="vw-sec">
-            <h4 className="row-tight">Does this affect me?<InfoTip inline title={t('Does this affect me?')}>Hostwerk only says what it can really tell from its own setup. Without a note the version matches – that does not prove an attack works, but it is worth fixing.</InfoTip></h4>
+            <h4 className="row-tight">Does this affect me?<InfoTip pop title={t('Does this affect me?')}>Hostwerk only says what it can really tell from its own setup. Without a note the version matches – that does not prove an attack works, but it is worth fixing.</InfoTip></h4>
             {(f.hints || []).length ? <ul className="vw-hints">{f.hints.map((h, i) => <li key={i} className="small"><Info size={14} aria-hidden="true" /><span>{hintText(h, t)}</span></li>)}</ul> : <p className="small muted">{t('The installed version is in the affected range. Hostwerk knows nothing that would rule it out.')}</p>}
           </section>
 
@@ -545,7 +545,7 @@ function VulnPage() {
             <div className="row-tight tiny muted vw-foot">
               <Unchecked d={d} />
               <SourceChips d={d} />
-              <InfoTip inline title="Sources">Free databases without a key: OSV.dev, the NVD (by CPE), CISA’s list of exploited vulnerabilities and FIRST’s EPSS. Hostwerk asks once a day, bundled and throttled, and keeps the answers – if a source is down, the last state stays. New critical or exploited findings go to Hostwerk’s notifications (Settings → Notifications).</InfoTip>
+              <InfoTip pop title="Sources">Free databases without a key: OSV.dev, the NVD (by CPE), CISA’s list of exploited vulnerabilities and FIRST’s EPSS. Hostwerk asks once a day, bundled and throttled, and keeps the answers – if a source is down, the last state stays. New critical or exploited findings go to Hostwerk’s notifications (Settings → Notifications).</InfoTip>
             </div>
           )} />
         </>

@@ -1,6 +1,6 @@
 /* Schwachstellen-Wache: Ampel, Zahlen, gruppierte Liste, Detailansicht, Kachel – nur Hostwerks Tokens */
 /* Eine Leiste: Urteil + Zähler (früher zwei hohe Blöcke) */
-.vw-summary { display: grid; grid-template-columns: minmax(220px, 1fr) 3fr; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.vw-summary { display: grid; grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: var(--sp-2); margin-bottom: var(--sp-2); }
 .vw-overall { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); }
 .vw-overall h2 { margin: 0; font-size: var(--fs-lg); }
 .vw-overall p { margin: 2px 0 0; }
@@ -18,7 +18,7 @@
 .vw-light-green { background: var(--ok); }
 .vw-light.lit { opacity: 1; box-shadow: 0 0 0 2px var(--surface), 0 0 12px var(--accent-soft); }
 
-.vw-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: var(--sp-2); }
+.vw-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: var(--sp-2); }
 .vw-stat { text-align: left; cursor: pointer; font: inherit; color: inherit; min-height: 44px; padding: var(--sp-2) var(--sp-3); }
 .vw-stat .v { font-size: var(--fs-xl); }
 .vw-stat:hover { background: var(--surface-2); }
