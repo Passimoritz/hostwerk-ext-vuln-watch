@@ -9,7 +9,7 @@
     "de": "Alle bekannten Schwachstellen (CVE, CVSS) deiner Dienste auf einen Blick – Webserver, PHP, Datenbanken, Laufzeiten, Docker-Images, Minecraft und Projekt-Abhängigkeiten, passend zur installierten Version. Mit „wird aktiv ausgenutzt“ (CISA KEV), Ausnutzungs-Wahrscheinlichkeit (EPSS), Lebensende, Update per Knopf, Ausnahmen und Benachrichtigung. Freie Quellen ohne Schlüssel: OSV.dev, NVD, CISA, FIRST.",
     "en": "Every known vulnerability (CVE, CVSS) of your services at a glance – web servers, PHP, databases, runtimes, Docker images, Minecraft and project dependencies, matched to the installed version. With “actively exploited” (CISA KEV), likelihood of exploitation (EPSS), end of life, one-click updates, exceptions and alerts. Free sources without keys: OSV.dev, NVD, CISA, FIRST."
   },
-  "version": "1.2.0",
+  "version": "1.3.0",
   "author": "Hostwerk",
   "homepage": "https://github.com/Passimoritz/hostwerk-ext-vuln-watch",
   "license": "MIT",

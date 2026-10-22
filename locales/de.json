@@ -243,6 +243,9 @@
   "Minecraft": "Minecraft",
   "OSV.dev": "OSV.dev",
   "CISA KEV": "CISA KEV",
+  "Services": "Dienste",
+  "What is checked": "Was geprüft wird",
+  "Close": "Schließen",
   "$patterns": [
     [
       "Offline mode is on – no connection to {}.",

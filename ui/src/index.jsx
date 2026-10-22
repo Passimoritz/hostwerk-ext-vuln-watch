@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { post, put, del, useApi, fmtDate, openExternal } from '@hostwerk/api';
 import { Btn, Modal, Seg, Field, Empty, Loading, Callout, InfoTip, TileEmpty, toast } from '@hostwerk/ui';
+import { useFill } from './fill';
 import { contextMenu } from '@hostwerk/kit';
 import { t, pl } from '@hostwerk/i18n';
 import { parse, explain } from '../../server/cvss';
@@ -96,13 +97,13 @@ function Summary({ d, filter, setFilter }) {
       <div className="v">{n || 0}</div>
     </button>
   );
+  // Eine Leiste statt zwei hoher Blöcke: Ampel + Urteil links (Erklärung als ⓘ), daneben die Zähler als Filter-Knöpfe
   return (
     <div className="vw-summary">
       <div className={`card vw-overall vw-overall-${d.overall || 'ok'}`}>
-        <Lights overall={d.overall || 'ok'} size="lg" />
-        <div className="grow">
-          <h2>{t(o.title)}</h2>
-          <p className="small muted">{t(o.text)}</p>
+        <Lights overall={d.overall || 'ok'} />
+        <div className="grow vw-overall-text">
+          <h2 className="row-tight">{t(o.title)}<InfoTip inline title={t(o.title)}>{t(o.text)}</InfoTip></h2>
           <p className="tiny muted">{d.at ? t('Checked {when}', { when: fmtDate(d.at) }) : t('Not checked yet')}</p>
         </div>
       </div>
@@ -150,24 +151,75 @@ function FindingRow({ f, onOpen, onIgnore }) {
   );
 }
 
-/** Gruppe eines Dienstes (Ansicht „nach Dienst“). */
+const worstOf = (g) => g.findings.reduce((m, f) => Math.max(m, f.kev ? 5 : RANK[levelOf(f)]), 0);
+const countsOf = (g) => ORDER.map((lv) => [lv, g.findings.filter((f) => f.kind === 'vuln' && levelOf(f) === lv && !f.ignored).length]).filter(([, n]) => n);
+
+/** Funde eines Dienstes (rechte Seite der Ansicht „nach Dienst“): Kopf mit Update-Knopf, Liste scrollt in ihrer Fläche. */
 function ServiceGroup({ g, onOpen, onIgnore, onUpdate, busyKey }) {
   const A = AREA[g.area] || AREA.system;
-  const worst = g.findings.reduce((m, f) => Math.max(m, f.kev ? 5 : RANK[levelOf(f)]), 0);
   const patch = g.findings.map((f) => f.fix).find((x) => x && x.kind === 'patch');
   const href = g.findings[0] && g.findings[0].fix && g.findings[0].fix.href;
   return (
-    <section className={`card vw-group vw-worst-${worst}`} aria-label={g.name}>
+    <section className={`card vw-group vw-detail-pane vw-worst-${worstOf(g)}`} aria-label={g.name}>
       <div className="card-head">
         <A.icon size={16} aria-hidden="true" />
         <h3 className="ellipsis grow" title={g.name}>{g.name}{g.version ? <span className="muted vw-ver"> {g.version}</span> : null}</h3>
-        <span className="vw-group-counts">
-          {ORDER.map((lv) => { const n = g.findings.filter((f) => f.kind === 'vuln' && levelOf(f) === lv && !f.ignored).length; return n ? <span key={lv} className={`badge ${LEVEL_BADGE[lv]}`} title={t(LEVEL_LABEL[lv])}>{n} {t(LEVEL_LABEL[lv])}</span> : null; })}
-        </span>
+        <span className="badge">{g.findings.length}</span>
         {patch && <Btn className="primary sm" icon={ArrowUpCircle} busy={busyKey === patch.key} onClick={() => onUpdate(patch.key)} title={t('Hostwerk installs {to} – tested, with automatic rollback.', { to: patch.to })}>{t('Update to {to}', { to: patch.to })}</Btn>}
         {!patch && href && <a className="btn ghost sm" href={href} title={t('Open the service')}><ExternalLink size={14} aria-hidden="true" />{t('Open')}</a>}
       </div>
-      <ul className="vw-list">{g.findings.map((f) => <FindingRow key={f.key} f={f} onOpen={onOpen} onIgnore={onIgnore} />)}</ul>
+      <ul className="vw-list vw-scroll">{g.findings.map((f) => <FindingRow key={f.key} f={f} onOpen={onOpen} onIgnore={onIgnore} />)}</ul>
+    </section>
+  );
+}
+
+/** Linke Liste der Dienste mit Zählern – Pfeiltasten wechseln den Dienst (Muster wie eine Listbox). */
+function ServiceNav({ groups, sel, onSel }) {
+  const keys = (e) => {
+    const i = groups.findIndex((g) => g.id === sel);
+    const n = e.key === 'ArrowDown' ? i + 1 : e.key === 'ArrowUp' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? groups.length - 1 : null;
+    if (n == null || !groups[n]) return;
+    e.preventDefault(); onSel(groups[n].id);
+    const el = e.currentTarget.querySelector(`[data-key="${CSS.escape(String(groups[n].id))}"]`); if (el) el.focus();
+  };
+  return (
+    <nav className="card vw-nav" aria-label={t('Services')}>
+      <ul className="vw-scroll" onKeyDown={keys}>
+        {groups.map((g) => {
+          const A = AREA[g.area] || AREA.system;
+          const on = g.id === sel;
+          return (
+            <li key={g.id}>
+              <button type="button" data-key={g.id} className={`vw-nav-item vw-worst-${worstOf(g)} ${on ? 'on' : ''}`} aria-current={on ? 'true' : undefined} tabIndex={on ? 0 : -1} onClick={() => onSel(g.id)}>
+                <A.icon size={15} aria-hidden="true" />
+                <span className="grow vw-nav-main">
+                  <span className="ellipsis" title={g.name}>{g.name}{g.version ? <span className="muted vw-ver"> {g.version}</span> : null}</span>
+                  <span className="vw-group-counts">
+                    {g.findings.some((f) => f.kev) && <span className="badge err" title={t('Exploited')}><Flame size={11} aria-hidden="true" />{g.findings.filter((f) => f.kev).length}</span>}
+                    {countsOf(g).map(([lv, n]) => <span key={lv} className={`badge ${LEVEL_BADGE[lv]}`} title={t(LEVEL_LABEL[lv])}>{n} {t(LEVEL_LABEL[lv])}</span>)}
+                    {g.findings.some((f) => f.kind === 'eol') && <span className="badge warn" title={t('End of life')}><Clock size={11} aria-hidden="true" />{t('End of life')}</span>}
+                  </span>
+                </span>
+                <ChevronRight size={14} className="muted" aria-hidden="true" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+/** Eine Gruppe der Ansicht „nach Schwere“ – zuklappbar; offen sind nur die dringenden (ausgenutzt, kritisch). */
+function SeverityGroup({ g, label, Icon, onOpen, onIgnore }) {
+  const [open, setOpen] = useState(g.id === 'kev' || g.id === 'critical');
+  return (
+    <section className={`vw-sev vw-sev-${g.id}`} aria-label={t(label)}>
+      <button type="button" className="vw-sev-head" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <ChevronRight size={14} className={open ? 'vw-rot' : ''} aria-hidden="true" />
+        <Icon size={15} aria-hidden="true" /><b className="grow">{t(label)}</b><span className="badge">{g.findings.length}</span>
+      </button>
+      {open && <ul className="vw-list">{g.findings.map((f) => <FindingRow key={f.key} f={{ ...f, title: `${f.itemName}: ${titleOf(f)}` }} onOpen={onOpen} onIgnore={onIgnore} />)}</ul>}
     </section>
   );
 }
@@ -324,7 +376,7 @@ function Detail({ fKey, lang, aiReady, onClose, onChanged, onUpdate, busyKey }) 
 }
 
 /** Gefilterte und gruppierte Liste – gebraucht von der Seite und den Reitern in Webserver/Datenbanken. */
-function FindingList({ d, setData, areas = null, initialFilter = null, compact = false }) {
+function FindingList({ d, setData, areas = null, initialFilter = null, compact = false, foot = null }) {
   const [q, setQ] = useState('');
   const [group, setGroup] = useState('service');
   const [stat, setStat] = useState(initialFilter);
@@ -366,6 +418,10 @@ function FindingList({ d, setData, areas = null, initialFilter = null, compact =
     return [...by.values()].filter((g) => g.findings.length);
   }, [list, group]);
 
+  // Gewählter Dienst der linken Liste; fällt er durch Filter weg, gilt der dringendste
+  const [sel, setSel] = useState(null);
+  const selGroup = group === 'service' ? (groups.find((g) => g.id === sel) || groups[0]) : null;
+  const fill = useFill({ min: 220 });
   const usedAreas = [...new Set(all.map((f) => f.area))];
   const onUpdate = async (key) => {
     setBusyKey(key);
@@ -385,6 +441,7 @@ function FindingList({ d, setData, areas = null, initialFilter = null, compact =
   return (
     <>
       {!compact && <Summary d={d} filter={stat} setFilter={setStat} />}
+      {foot}
       <div className="vw-toolbar">
         <div className="input-icon grow vw-search"><Search aria-hidden="true" /><input className="input sm" type="search" placeholder={t('Search CVE, service or package …')} aria-label={t('Search')} value={q} onChange={(e) => setQ(e.target.value)} /></div>
         <Seg value={group} onChange={setGroup} options={[{ id: 'service', label: t('By service'), icon: Layers }, { id: 'severity', label: t('By severity'), icon: ListTree }]} />
@@ -407,15 +464,14 @@ function FindingList({ d, setData, areas = null, initialFilter = null, compact =
       {!list.length ? (
         all.length ? <Empty icon={Search} title="Nothing matches" text="Change the search or the filters." /> : <Empty icon={ShieldCheck} title="No known vulnerabilities" text="Nothing known affects the installed versions here." />
       ) : group === 'service' ? (
-        <div className="stack vw-groups">{groups.map((g) => <ServiceGroup key={g.id} g={g} onOpen={(f) => setOpen(f.key)} onIgnore={onIgnore} onUpdate={onUpdate} busyKey={busyKey} />)}</div>
+        // Links die Dienste mit Zählern, rechts die Funde des gewählten – die Seite scrollt nicht, nur die beiden Listen
+        <div className="vw-md" ref={fill}>
+          <ServiceNav groups={groups} sel={selGroup && selGroup.id} onSel={setSel} />
+          {selGroup && <ServiceGroup key={selGroup.id} g={selGroup} onOpen={(f) => setOpen(f.key)} onIgnore={onIgnore} onUpdate={onUpdate} busyKey={busyKey} />}
+        </div>
       ) : (
-        <div className="stack vw-groups">
-          {groups.map((g) => { const [label, Icon] = GROUP_TITLE[g.id]; return (
-            <section key={g.id} className={`card vw-group vw-sev-${g.id}`} aria-label={t(label)}>
-              <div className="card-head"><Icon size={16} aria-hidden="true" /><h3 className="grow">{t(label)}</h3><span className="badge">{g.findings.length}</span></div>
-              <ul className="vw-list">{g.findings.map((f) => <FindingRow key={f.key} f={{ ...f, title: `${f.itemName}: ${titleOf(f)}` }} onOpen={(x) => setOpen(x.key)} onIgnore={onIgnore} />)}</ul>
-            </section>
-          ); })}
+        <div className="card vw-sev-list vw-scroll" ref={fill}>
+          {groups.map((g) => { const [label, Icon] = GROUP_TITLE[g.id]; return <SeverityGroup key={g.id} g={g} label={label} Icon={Icon} onOpen={(x) => setOpen(x.key)} onIgnore={onIgnore} />; })}
         </div>
       )}
       {open && <Detail fKey={open} lang={d.lang} aiReady={!!(ai.data && ai.data.ready)} onClose={() => setOpen(null)} onChanged={setData} onUpdate={onUpdate} busyKey={busyKey} />}
@@ -424,35 +480,36 @@ function FindingList({ d, setData, areas = null, initialFilter = null, compact =
   );
 }
 
+/** „Was wird geprüft“: Knopf mit Zählern, der Bestand steht im Dialog statt unter der Liste. */
 function Unchecked({ d }) {
   const [openList, setOpenList] = useState(false);
   const list = d.unchecked || [];
   const checked = (d.inventory || []).filter((x) => !x.why);
   const pkgs = (d.inventory || []).reduce((n, x) => n + (x.packages || 0), 0);
+  const label = `${t('What is checked: {n} services', { n: checked.length })}${pkgs ? ` · ${pl(pkgs, '{n} package', '{n} packages')}` : ''}${list.length ? ` · ${t('{n} without check', { n: list.length })}` : ''}`;
   return (
-    <section className="vw-inv">
-      <button type="button" className="btn ghost sm" aria-expanded={openList} onClick={() => setOpenList(!openList)}>
-        <ChevronRight size={14} className={openList ? 'vw-rot' : ''} aria-hidden="true" />
-        {t('What is checked: {n} services', { n: checked.length })}{pkgs ? ` · ${pl(pkgs, '{n} package', '{n} packages')}` : ''}{list.length ? ` · ${t('{n} without check', { n: list.length })}` : ''}
-      </button>
+    <>
+      <button type="button" className="link-btn tiny vw-inv-btn" onClick={() => setOpenList(true)}>{label} …</button>
       {openList && (
-        <div className="card vw-inv-card">
-          <table className="vw-inv-table small">
-            <thead><tr><th scope="col">{t('Service')}</th><th scope="col">{t('Program')}</th><th scope="col">{t('Version')}</th><th scope="col">{t('Check')}</th></tr></thead>
-            <tbody>
-              {(d.inventory || []).map((x) => (
-                <tr key={x.id}>
-                  <td className="ellipsis">{x.name}</td>
-                  <td className="muted">{x.label || (x.image ? x.image : x.files ? x.files.join(', ') : '–')}</td>
-                  <td className="mono">{x.packages != null ? pl(x.packages, '{n} package', '{n} packages') : x.version || '–'}{x.distro ? <span className="muted"> ({t('system package')})</span> : null}{x.local ? <span className="muted"> · {t('local only')}</span> : null}</td>
-                  <td>{x.why ? <span className="muted">{t(WHY[x.why] || x.why)}</span> : <span className="c-ok row-tight"><CircleCheck size={13} aria-hidden="true" />{t('checked')}</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Modal size="wide" title={t('What is checked')} subtitle={label} onClose={() => setOpenList(false)} footer={<Btn onClick={() => setOpenList(false)}>Close</Btn>}>
+          <div className="table-wrap">
+            <table className="table vw-inv-table small">
+              <thead><tr><th scope="col">{t('Service')}</th><th scope="col">{t('Program')}</th><th scope="col">{t('Version')}</th><th scope="col">{t('Check')}</th></tr></thead>
+              <tbody>
+                {(d.inventory || []).map((x) => (
+                  <tr key={x.id}>
+                    <td className="ellipsis">{x.name}</td>
+                    <td className="muted">{x.label || (x.image ? x.image : x.files ? x.files.join(', ') : '–')}</td>
+                    <td className="mono">{x.packages != null ? pl(x.packages, '{n} package', '{n} packages') : x.version || '–'}{x.distro ? <span className="muted"> ({t('system package')})</span> : null}{x.local ? <span className="muted"> · {t('local only')}</span> : null}</td>
+                    <td>{x.why ? <span className="muted">{t(WHY[x.why] || x.why)}</span> : <span className="c-ok row-tight"><CircleCheck size={13} aria-hidden="true" />{t('checked')}</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Modal>
       )}
-    </section>
+    </>
   );
 }
 
@@ -484,14 +541,13 @@ function VulnPage() {
         <Empty icon={ShieldAlert} title="Not checked yet" text="The first check runs a few minutes after Hostwerk starts – or right now." action={<Btn className="primary" icon={RefreshCw} busy={busy} onClick={() => refresh(false)}>Check now</Btn>} />
       ) : (
         <>
-          <FindingList d={d} setData={st.setData} />
-          <div className="vw-foot">
-            <Unchecked d={d} />
-            <div className="row-tight tiny muted">
+          <FindingList d={d} setData={st.setData} foot={(
+            <div className="row-tight tiny muted vw-foot">
+              <Unchecked d={d} />
               <SourceChips d={d} />
               <InfoTip inline title="Sources">Free databases without a key: OSV.dev, the NVD (by CPE), CISA’s list of exploited vulnerabilities and FIRST’s EPSS. Hostwerk asks once a day, bundled and throttled, and keeps the answers – if a source is down, the last state stays. New critical or exploited findings go to Hostwerk’s notifications (Settings → Notifications).</InfoTip>
             </div>
-          </div>
+          )} />
         </>
       )}
     </div>

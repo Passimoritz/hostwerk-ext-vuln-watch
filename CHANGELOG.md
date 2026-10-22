@@ -1,3 +1,7 @@
+## 1.3.0
+
+- Fits on one screen: services on the left with their counters, findings of the chosen service on the right – both lists scroll on their own, the page stays put; “by severity” shows one area with groups you can fold (exploited and critical open); verdict and counters as one compact bar, “What is checked” opens as a dialog / Passt auf einen Bildschirm: links die Dienste mit Zählern, rechts die Funde des gewählten Dienstes – beide Listen scrollen für sich, die Seite bleibt stehen; „nach Schwere“ zeigt eine Fläche mit zuklappbaren Gruppen (ausgenutzt und kritisch offen); Urteil und Zähler als eine schmale Leiste, „Was wird geprüft“ öffnet als Dialog
+
 ## 1.2.0
 
 - More versions: images of Compose stacks and of game servers in Docker are checked like Docker apps (official images with a version in the tag), all others appear honestly as “without check”; game servers show their Steam build id (extension “Game servers” 1.10+). / Mehr Versionen: Images aus Compose-Stapeln und von Spiele-Servern in Docker werden wie Docker-Apps geprüft (offizielle Images mit Versionsnummer im Tag), alle anderen erscheinen ehrlich „ohne Prüfung“; Spiele-Server zeigen ihre Steam-Build-ID (Erweiterung „Spiele-Server“ ab 1.10).
