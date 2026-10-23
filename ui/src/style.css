@@ -43,12 +43,11 @@
 .vw-nav ul { list-style: none; margin: 0; padding: var(--sp-1); }
 .vw-nav-item { display: flex; align-items: center; gap: var(--sp-2); width: 100%; min-height: 44px; padding: var(--sp-2); border: 0; border-left: 3px solid transparent; border-radius: var(--r-md); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .vw-nav-item:hover { background: var(--surface-2); }
-.vw-nav-item.on { background: var(--accent-soft); }
+.vw-nav-item.on { background: var(--surface-2); box-shadow: inset 0 0 0 2px var(--accent); }
 .vw-nav-item:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: -2px; }
 .vw-nav-item.vw-worst-5, .vw-nav-item.vw-worst-4, .vw-nav-item.vw-worst-3 { border-left-color: var(--err); }
 .vw-nav-item.vw-worst-2 { border-left-color: var(--warn); }
 .vw-nav-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-size: var(--fs-sm); }
-.vw-nav-main .badge { font-size: var(--fs-xs); }
 .vw-group .card-head { flex-wrap: wrap; gap: var(--sp-2); }
 .vw-group.vw-worst-5, .vw-group.vw-worst-4 { border-color: var(--err); }
 .vw-group.vw-worst-3 { border-left: 3px solid var(--err); }

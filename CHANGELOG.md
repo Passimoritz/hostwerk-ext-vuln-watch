@@ -1,3 +1,7 @@
+## 1.3.1
+
+- The chosen service is marked with a frame instead of a tinted area – the red badges keep enough contrast (WCAG AA) / Der gewählte Dienst ist mit einem Rahmen markiert statt einer getönten Fläche – die roten Abzeichen behalten genug Kontrast (WCAG AA)
+
 ## 1.3.0
 
 - With newer Hostwerk versions the counters use Hostwerk’s own figure bar (StatBar) and “What is checked” opens as a side sheet – older versions keep the own counters and the dialog; the lists also subtract lines Hostwerk shows under a tab / Mit neueren Hostwerk-Versionen nutzen die Zähler Hostwerks eigene Kennzahl-Leiste (StatBar) und „Was wird geprüft“ öffnet als Seitenblatt – ältere Versionen behalten die eigenen Zähler und den Dialog; die Listen rechnen auch Zeilen ab, die Hostwerk unter einem Reiter zeigt
