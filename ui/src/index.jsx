@@ -6,12 +6,16 @@ import {
 } from 'lucide-react';
 import { post, put, del, useApi, fmtDate, openExternal } from '@hostwerk/api';
 import { Btn, Modal, Seg, Field, Empty, Loading, Callout, InfoTip, TileEmpty, toast } from '@hostwerk/ui';
+import * as HUI from '@hostwerk/ui';
 import { useFill } from './fill';
 import { contextMenu } from '@hostwerk/kit';
 import { t, pl } from '@hostwerk/i18n';
 import { parse, explain } from '../../server/cvss';
 import { LEVEL_LABEL, WHY, hintText, fixText, pkgCommand } from '../../server/texts';
 import './style.css';
+
+// Seitenblatt aus Hostwerk (neuere Versionen) – die Seite bleibt daneben sichtbar; ältere Versionen zeigen denselben Inhalt als Dialog
+const Sheet = HUI.SideSheet || Modal;
 
 /*
  * Schwachstellen-Wache: Ampel und Zahlen je Stufe, Liste nach Dienst oder nach Schwere, Filter und Suche, Detailansicht mit
@@ -107,6 +111,13 @@ function Summary({ d, filter, setFilter }) {
           <p className="tiny muted">{d.at ? t('Checked {when}', { when: fmtDate(d.at) }) : t('Not checked yet')}</p>
         </div>
       </div>
+      {/* Neuere Hostwerk-Versionen: Kern-Kennzahlleiste (StatBar) – sonst die eigenen Zähler-Knöpfe */}
+      {HUI.StatBar ? (
+        <HUI.StatBar label={t('Counts')} className="vw-statbar" items={[
+          ['critical', t('Critical'), c.critical, OctagonAlert, 'err'], ['high', t('High'), c.high, TriangleAlert, 'err'], ['medium', t('Medium'), c.medium, CircleAlert, 'warn'],
+          ['low', t('Low'), (c.low || 0) + (c.unknown || 0), Info, null], ['kev', t('Exploited'), c.kev, Flame, 'err'], ['eol', t('End of life'), c.eol, Clock, 'warn'], ['fixable', t('Hostwerk can fix'), c.fixable, Wrench, 'ok'],
+        ].map(([key, label, n, icon, tone]) => ({ label, value: n || 0, icon, tone: n ? tone : null, active: filter === key, title: t('Show only these'), onClick: () => setFilter(filter === key ? null : key) }))} />
+      ) : (
       <div className="vw-stats">
         {stat('critical', t('Critical'), c.critical, OctagonAlert, 'vw-stat-critical')}
         {stat('high', t('High'), c.high, TriangleAlert, 'vw-stat-high')}
@@ -116,6 +127,7 @@ function Summary({ d, filter, setFilter }) {
         {stat('eol', t('End of life'), c.eol, Clock, 'vw-stat-eol')}
         {stat('fixable', t('Hostwerk can fix'), c.fixable, Wrench, 'vw-stat-fix')}
       </div>
+      )}
     </div>
   );
 }
@@ -491,7 +503,7 @@ function Unchecked({ d }) {
     <>
       <button type="button" className="link-btn tiny vw-inv-btn" onClick={() => setOpenList(true)}>{label} …</button>
       {openList && (
-        <Modal size="wide" title={t('What is checked')} subtitle={label} onClose={() => setOpenList(false)} footer={<Btn onClick={() => setOpenList(false)}>Close</Btn>}>
+        <Sheet size="wide" title={t('What is checked')} subtitle={label} onClose={() => setOpenList(false)} footer={<Btn onClick={() => setOpenList(false)}>Close</Btn>}>
           <div className="table-wrap">
             <table className="table vw-inv-table small">
               <thead><tr><th scope="col">{t('Service')}</th><th scope="col">{t('Program')}</th><th scope="col">{t('Version')}</th><th scope="col">{t('Check')}</th></tr></thead>
@@ -507,7 +519,7 @@ function Unchecked({ d }) {
               </tbody>
             </table>
           </div>
-        </Modal>
+        </Sheet>
       )}
     </>
   );

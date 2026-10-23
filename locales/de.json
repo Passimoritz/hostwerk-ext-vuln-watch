@@ -246,6 +246,7 @@
   "Services": "Dienste",
   "What is checked": "Was geprüft wird",
   "Close": "Schließen",
+  "Counts": "Zähler",
   "$patterns": [
     [
       "Offline mode is on – no connection to {}.",
