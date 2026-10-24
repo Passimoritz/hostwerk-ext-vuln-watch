@@ -1,3 +1,7 @@
+## 1.3.2
+
+- New animated icon and banner in the common Hostwerk style (isometric block). / Neues animiertes Symbol und Banner im gemeinsamen Hostwerk-Stil (isometrischer Block).
+
 ## 1.3.1
 
 - The chosen service is marked with a frame instead of a tinted area – the red badges keep enough contrast (WCAG AA) / Der gewählte Dienst ist mit einem Rahmen markiert statt einer getönten Fläche – die roten Abzeichen behalten genug Kontrast (WCAG AA)
