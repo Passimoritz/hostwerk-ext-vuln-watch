@@ -4,7 +4,9 @@
 
 Every known vulnerability (CVE, CVSS) of your services at a glance – web servers, PHP, databases, runtimes, Docker images, Minecraft and project dependencies, matched to the installed version. With “actively exploited” (CISA KEV), likelihood of exploitation (EPSS), end of life, one-click updates, exceptions and alerts. Free sources without keys: OSV.dev, NVD, CISA, FIRST.
 
-[Deutsch](README.de.md) · An official [Hostwerk](https://github.com/Passimoritz/hostwerk-public) extension (SDK 2.7, native extension)
+[Deutsch](README.de.md) · An official [Hostwerk](https://github.com/Passimoritz/hostwerk-public) extension (native extension, Hostwerk 3.0 or newer)
+
+![Screenshot](docs/screenshot.png)
 
 ## What it does
 

@@ -4,7 +4,9 @@
 
 Alle bekannten Schwachstellen (CVE, CVSS) deiner Dienste auf einen Blick – Webserver, PHP, Datenbanken, Laufzeiten, Docker-Images, Minecraft und Projekt-Abhängigkeiten, passend zur installierten Version. Mit „wird aktiv ausgenutzt“ (CISA KEV), Ausnutzungs-Wahrscheinlichkeit (EPSS), Lebensende, Update per Knopf, Ausnahmen und Benachrichtigung. Freie Quellen ohne Schlüssel: OSV.dev, NVD, CISA, FIRST.
 
-[English](README.md) · Eine offizielle [Hostwerk](https://github.com/Passimoritz/hostwerk-public)-Erweiterung (SDK 2.7, native Erweiterung)
+[English](README.md) · Offizielle [Hostwerk](https://github.com/Passimoritz/hostwerk-public)-Erweiterung (native Erweiterung, ab Hostwerk 3.0)
+
+![Bildschirmfoto](docs/screenshot.de.png)
 
 ## Was sie kann
 
