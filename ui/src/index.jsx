@@ -607,12 +607,22 @@ function areaTab(areas) {
   };
 }
 
+/** Die ganze Seite als Abschnitt: wie bei den Reitern ohne eigenen Titelblock (.ext-embedded), die Knöpfe bleiben. */
+function VulnSection() {
+  return <div className="ext-embedded"><VulnPage /></div>;
+}
+
 export default {
   pages: { main: VulnPage },
+  sections: {
+    // 1.4 (Hostwerk mit SDK 3.12): Abschnitt in System → Wartung (#/system/wartung/vulns), neben Selbstwartung und Gesundheits-Check
+    'system.wartung': [{ id: 'vulns', title: 'Vulnerabilities', icon: ShieldAlert, Component: VulnSection, order: 45 }],
+  },
   slots: {
     'dashboard.tiles': [{ id: 'vulns', title: 'Vulnerabilities', icon: ShieldAlert, size: 'third', Component: VulnTile }],
-    // Seit Hostwerk 3.0 (SDK 3.2) ohne eigenen Seitenleisten-Eintrag ("nav": false) – die ganze Seite als Reiter im passenden Bereich;
-    // Hostwerk blendet dabei ihren Titel aus (Reiter + Herkunftszeile sagen schon, was es ist), die Knöpfe bleiben
+    // Ältere Hostwerk (vor SDK 3.12): die ganze Seite als Reiter System → Schwachstellen, Hostwerk blendet ihren Titel aus.
+    // Bewusst OHNE fallback: true – Hostwerk 3.10/3.11 blenden fallback-Reiter aus, kennen system.wartung aber noch nicht.
+    // Hostwerk 3.12 lässt den Reiter von selbst weg, weil diese Erweiterung den Abschnitt oben liefert.
     'system.tabs': [{ id: 'vulns', title: 'Vulnerabilities', icon: ShieldAlert, Component: VulnPage, order: 45 }],
     'web.tabs': [{ id: 'vulns', title: 'Vulnerabilities', icon: ShieldAlert, Component: areaTab(['web', 'php']), order: 80 }],
     'dbs.tabs': [{ id: 'vulns', title: 'Vulnerabilities', icon: ShieldAlert, Component: areaTab(['dbs']), order: 80 }],

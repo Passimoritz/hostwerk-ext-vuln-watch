@@ -1,3 +1,7 @@
+## 1.4.0
+
+- Backups and System rebuilt (Hostwerk with SDK 3.12): the vulnerabilities are a section in System → Upkeep (#/system/wartung/vulns), next to self-maintenance and the health check; older Hostwerk versions keep the tab System → Vulnerabilities. / Sicherungen und System neu (Hostwerk mit SDK 3.12): Die Schwachstellen sind ein Abschnitt unter System → Wartung (#/system/wartung/vulns), neben Selbstwartung und Gesundheits-Check; ältere Hostwerk-Versionen behalten den Reiter System → Schwachstellen.
+
 ## 1.3.2
 
 - New animated icon and banner in the common Hostwerk style (isometric block). / Neues animiertes Symbol und Banner im gemeinsamen Hostwerk-Stil (isometrischer Block).
