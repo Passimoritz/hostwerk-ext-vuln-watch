@@ -20,7 +20,7 @@ Alle bekannten Schwachstellen (CVE, CVSS) deiner Dienste auf einen Blick – Web
 - **In deiner Sprache**: Oberfläche auf Deutsch und Englisch, CVSS-Merkmale in beiden Sprachen erklärt. Beschreibungen stehen im Original (meist Englisch, klar gekennzeichnet); ist Hostwerks KI-Helfer bereit, ergänzt er eine kurze Zusammenfassung in der Oberflächensprache – gekennzeichnet als KI-Übersetzung
 - **Lebensende** aus Hostwerks eigener Lebensende-Wache (endoflife.date) als eigene Art von Fund
 - **Benachrichtigung** bei neuen kritischen oder aktiv ausgenutzten Funden, gebündelt in einer Meldung (Desktop, Push, Discord, ntfy, Mail – Einstellungen → Benachrichtigungen); die erste Prüfung meldet nur Ausgenutztes, nicht den ganzen Altbestand
-- Kachel für die Übersicht und Reiter unter *Webserver* und *Datenbanken*; steht außerdem unter *Livebetrieb → Wächter*
+- Kachel für die Übersicht und Reiter unter *Webserver* und *Datenbanken*; steht außerdem unter *Livebetrieb → Überwachung → Wächter*
 
 ## Was geprüft wird
 

@@ -10,7 +10,7 @@ Every known vulnerability (CVE, CVSS) of your services at a glance – web serve
 
 ## What it does
 
-- **Where:** System → Upkeep → Vulnerabilities (Hostwerk before SDK 3.12: System → Vulnerabilities), plus the tabs in Web servers and Databases – no own sidebar entry since 1.1.0; the full page stays under Extensions → Open
+- **Where:** System → Maintenance → Vulnerabilities (Hostwerk before SDK 3.12: System → Vulnerabilities), plus the tabs in Web servers and Databases – no own sidebar entry since 1.1.0; the full page stays under Extensions → Open
 - **Overview** with a traffic light and the number of findings per level (critical · high · medium · low), actively exploited, end of life and “Hostwerk can fix” – each number is a filter
 - **List** by service (services on the left, their findings on the right) or by severity (groups you can fold, urgent ones open) – the page stays put, only the lists scroll; with search (CVE, service, package) and filters: only exploited, only fixable, area, show ignored
 - **Detail view** per vulnerability: CVSS base score (v3.1/v4.0 where available) with level, the vector in plain words (attack over the network? login needed? does someone have to click?), CISA KEV with date and ransomware use, EPSS, affected and fixed version, links to NVD, OSV and the vendor
@@ -20,7 +20,7 @@ Every known vulnerability (CVE, CVSS) of your services at a glance – web serve
 - **In your language**: the interface in German and English, CVSS features explained in both languages. Descriptions are shown in the original (mostly English, clearly labelled); when Hostwerk’s AI assistant is ready, it adds a short summary in the interface language – marked as AI translation
 - **End of life** from Hostwerk’s own end-of-life watch (endoflife.date) as its own kind of finding
 - **Notifications** for new critical or actively exploited findings, bundled into one message (desktop, push, Discord, ntfy, mail – Settings → Notifications); the first check only reports exploited ones, not the whole backlog
-- Dashboard tile and tabs under *Web servers* and *Databases*; also listed under *Live → Watchers*
+- Dashboard tile and tabs under *Web servers* and *Databases*; also listed under *Go live → Monitoring → Watchers*
 
 ## What is checked
 
