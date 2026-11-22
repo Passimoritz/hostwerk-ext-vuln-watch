@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Shield, ShieldAlert, ShieldCheck, RefreshCw, Search, Flame, Clock, Wrench, ExternalLink, Copy, EyeOff, Eye, Sparkles, Languages,
   Server, Database, Code, Box, Gamepad2, Cpu, FolderGit2, Monitor, Puzzle, ChevronRight, ArrowUpCircle, Info, CircleAlert,
-  CircleCheck, CircleMinus, OctagonAlert, TriangleAlert, CircleHelp, Layers, ListTree,
+  CircleCheck, CircleMinus, OctagonAlert, TriangleAlert, CircleHelp, Layers, ListTree, Download,
 } from 'lucide-react';
 import { post, put, del, useApi, fmtDate, openExternal } from '@hostwerk/api';
 import { Btn, Modal, Seg, Field, Empty, Loading, Callout, InfoTip, TileEmpty, toast } from '@hostwerk/ui';
@@ -46,6 +46,27 @@ const SOURCES = [
 ];
 const pct = (x) => (x == null ? '–' : x >= 0.1 ? `${Math.round(x * 100)} %` : `${(x * 100).toFixed(1)} %`);
 const levelOf = (f) => f.level || 'unknown';
+const fmtDay = (ts) => new Date(ts).toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'de-DE', { day: 'numeric', month: 'numeric', year: 'numeric' });
+/** Key of the exception that hides a finding (its own or the one for the whole package). */
+const ignoreKey = (f) => (f.ignored && f.ignored.key) || f.key;
+
+/** Export of the findings shown (CSV for spreadsheets, Markdown to pass on to customers or the team). */
+function exportFindings(list, kind) {
+  const row = (f) => [f.itemName, f.kind === 'eol' ? t('End of life') : f.id, t(LEVEL_LABEL[levelOf(f)] || levelOf(f)), f.score ?? '', f.kev ? t('yes') : '', f.pkg ? `${f.pkg.name} ${f.pkg.version}` : (f.version || ''), f.fixed || '', f.ignored ? (f.ignored.reason || t('ignored')) : '', titleOf(f)];
+  const head = [t('Service'), t('ID'), t('Severity'), 'CVSS', t('Exploited'), t('Package / version'), t('Fixed in'), t('Exception'), t('Title')];
+  const day = new Date().toISOString().slice(0, 10);
+  let text; let type; let name;
+  if (kind === 'csv') {
+    const cell = (v) => { const x = String(v ?? ''); return /[",;\r\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x; };
+    // BOM: Excel reads umlauts correctly
+    text = `﻿${[head, ...list.map(row)].map((r) => r.map(cell).join(',')).join('\r\n')}\r\n`; type = 'text/csv;charset=utf-8'; name = `vulnerabilities-${day}.csv`;
+  } else {
+    const md = (v) => String(v ?? '').replace(/\|/g, '\\|').replace(/\s+/g, ' ');
+    text = [`# ${t('Vulnerabilities')} – ${day}`, '', `| ${head.join(' | ')} |`, `|${head.map(() => ' --- ').join('|')}|`, ...list.map((f) => `| ${row(f).map(md).join(' | ')} |`), ''].join('\n'); type = 'text/markdown;charset=utf-8'; name = `vulnerabilities-${day}.md`;
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
 const copy = (s) => navigator.clipboard.writeText(s).then(() => toast.success('Copied')).catch(() => {});
 const nvdUrl = (id) => `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(id)}`;
 const osvUrl = (id) => `https://osv.dev/vulnerability/${encodeURIComponent(id)}`;
@@ -132,23 +153,33 @@ function Summary({ d, filter, setFilter }) {
   );
 }
 
-function FindingRow({ f, onOpen, onIgnore }) {
+function FindingRow({ f, onOpen, onIgnore, onUpdate, withService = false }) {
+  // Rechtsklick bietet dieselben Wege wie die Knöpfe der Detailansicht
+  const patch = f.fix && f.fix.kind === 'patch' ? f.fix : null;
+  const href = f.fix && f.fix.href && f.fix.kind !== 'app' ? f.fix.href : null;
+  const extUrl = f.kind === 'vuln' ? (f.cve ? nvdUrl(f.cve) : osvUrl(f.id)) : null;
   const menu = (e) => contextMenu(e, [
+    { label: t('Details'), icon: Info, onClick: () => onOpen(f) },
+    patch && onUpdate && { label: t('Update to {to}', { to: patch.to }), icon: ArrowUpCircle, onClick: () => onUpdate(patch.key) },
+    href && { label: t('Open the service'), icon: ExternalLink, onClick: () => { window.location.hash = href; } },
     f.cve && { label: t('Copy ID'), icon: Copy, onClick: () => copy(f.cve) },
-    f.kind === 'vuln' && { label: t('Open at NVD'), icon: ExternalLink, onClick: () => openExternal(f.cve ? nvdUrl(f.cve) : osvUrl(f.id)) },
+    extUrl && { label: f.cve ? t('Open at NVD') : t('Open at OSV'), icon: ExternalLink, onClick: () => openExternal(extUrl).catch(() => window.open(extUrl, '_blank', 'noopener')) },
     { label: f.ignored ? t('Remove exception') : t('Ignore …'), icon: f.ignored ? Eye : EyeOff, onClick: () => onIgnore(f) },
   ]);
+  // Ansicht „nach Schwere“: der Dienst gehört in die Zeile (auch bei Lebensende-Funden)
+  const title = withService ? `${f.itemName}: ${titleOf(f)}` : titleOf(f);
   return (
     <li>
       <button type="button" className={`vw-row ${f.ignored ? 'vw-row-ignored' : ''}`} onClick={() => onOpen(f)} onContextMenu={menu}>
         <LevelBadge f={f} />
         <span className="vw-row-main">
-          <span className="vw-row-title ellipsis" title={titleOf(f)}>{titleOf(f)}</span>
+          <span className="vw-row-title ellipsis" title={title}>{title}</span>
           <span className="tiny muted vw-row-sub">
             {f.kind === 'vuln' && <span className="mono">{f.id}</span>}
             {f.pkg && <span className="mono">{f.pkg.name} {f.pkg.version}</span>}
             {f.fixed && <span>{t('fixed in {v}', { v: f.fixed })}</span>}
-            {f.ignored && <span>{t('ignored')}{f.ignored.reason ? `: ${f.ignored.reason}` : ''}</span>}
+            {/* With its end date: you see when the finding comes back without opening it */}
+            {f.ignored && <span>{f.ignored.until ? t('ignored until {date}', { date: fmtDay(f.ignored.until) }) : t('ignored')}{f.ignored.scope === 'package' ? ` · ${t('whole package')}` : ''}{f.ignored.reason ? `: ${f.ignored.reason}` : ''}</span>}
           </span>
         </span>
         <span className="vw-row-tags">
@@ -180,7 +211,7 @@ function ServiceGroup({ g, onOpen, onIgnore, onUpdate, busyKey }) {
         {patch && <Btn className="primary sm" icon={ArrowUpCircle} busy={busyKey === patch.key} onClick={() => onUpdate(patch.key)} title={t('Hostwerk installs {to} – tested, with automatic rollback.', { to: patch.to })}>{t('Update to {to}', { to: patch.to })}</Btn>}
         {!patch && href && <a className="btn ghost sm" href={href} title={t('Open the service')}><ExternalLink size={14} aria-hidden="true" />{t('Open')}</a>}
       </div>
-      <ul className="vw-list vw-scroll">{g.findings.map((f) => <FindingRow key={f.key} f={f} onOpen={onOpen} onIgnore={onIgnore} />)}</ul>
+      <ul className="vw-list vw-scroll">{g.findings.map((f) => <FindingRow key={f.key} f={f} onOpen={onOpen} onIgnore={onIgnore} onUpdate={onUpdate} />)}</ul>
     </section>
   );
 }
@@ -223,7 +254,7 @@ function ServiceNav({ groups, sel, onSel }) {
 }
 
 /** Eine Gruppe der Ansicht „nach Schwere“ – zuklappbar; offen sind nur die dringenden (ausgenutzt, kritisch). */
-function SeverityGroup({ g, label, Icon, onOpen, onIgnore }) {
+function SeverityGroup({ g, label, Icon, onOpen, onIgnore, onUpdate }) {
   const [open, setOpen] = useState(g.id === 'kev' || g.id === 'critical');
   return (
     <section className={`vw-sev vw-sev-${g.id}`} aria-label={t(label)}>
@@ -231,18 +262,21 @@ function SeverityGroup({ g, label, Icon, onOpen, onIgnore }) {
         <ChevronRight size={14} className={open ? 'vw-rot' : ''} aria-hidden="true" />
         <Icon size={15} aria-hidden="true" /><b className="grow">{t(label)}</b><span className="badge">{g.findings.length}</span>
       </button>
-      {open && <ul className="vw-list">{g.findings.map((f) => <FindingRow key={f.key} f={{ ...f, title: `${f.itemName}: ${titleOf(f)}` }} onOpen={onOpen} onIgnore={onIgnore} />)}</ul>}
+      {open && <ul className="vw-list">{g.findings.map((f) => <FindingRow key={f.key} f={f} withService onOpen={onOpen} onIgnore={onIgnore} onUpdate={onUpdate} />)}</ul>}
     </section>
   );
 }
 
-function IgnoreDialog({ f, onClose, onSaved }) {
+function IgnoreDialog({ f, onClose, onSaved, same = 1 }) {
   const [reason, setReason] = useState('');
   const [until, setUntil] = useState('');
+  const [whole, setWhole] = useState(false); // all findings of this package in this service (also later ones)
   const [busy, setBusy] = useState(false);
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   const save = async () => {
+    if (busy || !reason.trim()) return;
     setBusy(true);
-    try { onSaved(await put('/vuln-watch/ignore', { key: f.key, reason, until: until || null })); toast.success('Exception saved'); onClose(); } catch (e) { toast.error(e); }
+    try { onSaved(await put('/vuln-watch/ignore', { key: f.key, reason, until: until || null, scope: whole ? 'package' : undefined })); toast.success('Exception saved'); onClose(); } catch (e) { toast.error(e); }
     setBusy(false);
   };
   return (
@@ -250,11 +284,12 @@ function IgnoreDialog({ f, onClose, onSaved }) {
       footer={<><Btn onClick={onClose}>Cancel</Btn><Btn className="primary" icon={EyeOff} busy={busy} onClick={save} disabled={!reason.trim()}>Ignore</Btn></>}>
       <div className="stack">
         <Field label={t('Why does it not matter here?')}>
-          <input className="input" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} placeholder={t('e.g. module not used, only reachable in the home network')} aria-label={t('Why does it not matter here?')} autoFocus />
+          <input className="input" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } }} placeholder={t('e.g. module not used, only reachable in the home network')} aria-label={t('Why does it not matter here?')} autoFocus />
         </Field>
         <Field label={t('Ignore until (optional)')}>
-          <input className="input" type="date" value={until} onChange={(e) => setUntil(e.target.value)} aria-label={t('Ignore until (optional)')} />
+          <input className="input" type="date" min={today} value={until} onChange={(e) => setUntil(e.target.value)} aria-label={t('Ignore until (optional)')} />
         </Field>
+        {f.pkg && <label className="check small"><input type="checkbox" checked={whole} onChange={(e) => setWhole(e.target.checked)} />{same > 1 ? t('All {n} findings of {pkg} in {service} – also future ones', { n: same, pkg: f.pkg.name, service: f.itemName }) : t('All findings of {pkg} in {service} – also future ones', { pkg: f.pkg.name, service: f.itemName })}</label>}
         <p className="tiny muted">{t('Ignored findings no longer count and do not trigger notifications. After the date they come back on their own.')}</p>
       </div>
     </Modal>
@@ -282,7 +317,7 @@ function Detail({ fKey, lang, aiReady, onClose, onChanged, onUpdate, busyKey }) 
   const f = d.data;
   const p = f && f.vector ? parse(f.vector) : null;
   const parts = p ? explain(p, t) : [];
-  const unignore = async () => { try { onChanged(await del(`/vuln-watch/ignore?key=${encodeURIComponent(f.key)}`)); d.reload(); toast.success('Exception removed'); } catch (e) { toast.error(e); } };
+  const unignore = async () => { try { onChanged(await del(`/vuln-watch/ignore?key=${encodeURIComponent(ignoreKey(f))}`)); d.reload(); toast.success('Exception removed'); } catch (e) { toast.error(e); } };
   const cmd = f && f.pkg ? pkgCommand(f.pkg, f.fixed) : null;
   return (
     <Modal size="wide" title={f ? (f.kind === 'eol' ? `${t('End of life')}: ${f.itemName}` : f.id) : t('Vulnerability')} subtitle={f ? `${f.itemName}${f.version ? ` ${f.version}` : ''}${f.pkg ? ` · ${f.pkg.name} ${f.pkg.version}` : ''}` : null} onClose={onClose}>
@@ -446,7 +481,7 @@ function FindingList({ d, setData, areas = null, initialFilter = null, compact =
   };
   const onIgnore = async (f) => {
     if (!f.ignored) { setIgnoreFor(f); return; }
-    try { setData(await del(`/vuln-watch/ignore?key=${encodeURIComponent(f.key)}`)); toast.success('Exception removed'); } catch (e) { toast.error(e); }
+    try { setData(await del(`/vuln-watch/ignore?key=${encodeURIComponent(ignoreKey(f))}`)); toast.success('Exception removed'); } catch (e) { toast.error(e); }
   };
   const GROUP_TITLE = { kev: ['Actively exploited', Flame], eol: ['End of life', Clock], critical: ['Critical', OctagonAlert], high: ['High', TriangleAlert], medium: ['Medium', CircleAlert], low: ['Low', Info], unknown: ['Unrated', CircleHelp] };
 
@@ -470,6 +505,7 @@ function FindingList({ d, setData, areas = null, initialFilter = null, compact =
           </select>}
           <button type="button" className={`chip-toggle ${kevOnly ? 'on' : ''}`} aria-pressed={kevOnly} onClick={() => setKevOnly(!kevOnly)}><Flame size={12} aria-hidden="true" />{t('Only exploited')}</button>
           <button type="button" className={`chip-toggle ${fixOnly ? 'on' : ''}`} aria-pressed={fixOnly} onClick={() => setFixOnly(!fixOnly)}><Wrench size={12} aria-hidden="true" />{t('Only fixable')}</button>
+          {list.length > 0 && <Btn className="ghost sm" icon={Download} aria-haspopup="menu" onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); contextMenu({ preventDefault() {}, stopPropagation() {}, clientX: r.left, clientY: r.bottom + 4 }, [{ label: t('As CSV (spreadsheet)'), icon: Download, onClick: () => exportFindings(list, 'csv') }, { label: t('As Markdown'), icon: Download, onClick: () => exportFindings(list, 'md') }]); }}>Export</Btn>}
           <button type="button" className={`chip-toggle ${showIgnored ? 'on' : ''}`} aria-pressed={showIgnored} onClick={() => setShowIgnored(!showIgnored)}><EyeOff size={12} aria-hidden="true" />{t('Show ignored')}{d.counts && d.counts.ignored ? ` (${d.counts.ignored})` : ''}</button>
         </div>
       </div>
@@ -483,11 +519,11 @@ function FindingList({ d, setData, areas = null, initialFilter = null, compact =
         </div>
       ) : (
         <div className="card vw-sev-list vw-scroll" ref={fill}>
-          {groups.map((g) => { const [label, Icon] = GROUP_TITLE[g.id]; return <SeverityGroup key={g.id} g={g} label={label} Icon={Icon} onOpen={(x) => setOpen(x.key)} onIgnore={onIgnore} />; })}
+          {groups.map((g) => { const [label, Icon] = GROUP_TITLE[g.id]; return <SeverityGroup key={g.id} g={g} label={label} Icon={Icon} onOpen={(x) => setOpen(x.key)} onIgnore={onIgnore} onUpdate={onUpdate} />; })}
         </div>
       )}
       {open && <Detail fKey={open} lang={d.lang} aiReady={!!(ai.data && ai.data.ready)} onClose={() => setOpen(null)} onChanged={setData} onUpdate={onUpdate} busyKey={busyKey} />}
-      {ignoreFor && <IgnoreDialog f={ignoreFor} onClose={() => setIgnoreFor(null)} onSaved={setData} />}
+      {ignoreFor && <IgnoreDialog f={ignoreFor} same={ignoreFor.pkg ? all.filter((x) => x.item === ignoreFor.item && x.pkg && x.pkg.name === ignoreFor.pkg.name).length : 1} onClose={() => setIgnoreFor(null)} onSaved={setData} />}
     </>
   );
 }
@@ -534,6 +570,13 @@ function VulnPage() {
     try { st.setData(await post('/vuln-watch/refresh', { force })); } catch (e) { toast.error(e); }
     setBusy(false);
   };
+  // Läuft beim Öffnen schon eine Prüfung im Hintergrund, nachfragen, bis sie fertig ist – sonst dreht der Knopf endlos
+  const bgRunning = !!(d && d.running) && !busy;
+  useEffect(() => {
+    if (!bgRunning) return undefined;
+    const id = setTimeout(() => st.reload(), 4000);
+    return () => clearTimeout(id);
+  }, [bgRunning, d]); // eslint-disable-line react-hooks/exhaustive-deps
   const blocked = d ? Object.entries(d.blocked || {}) : [];
   return (
     <div className="page fade-in vw-page">

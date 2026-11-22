@@ -245,3 +245,52 @@ test('Ältere Hostwerk-Version ohne stabile Dienste: Rückfall auf die bisherige
   assert.strictEqual(svc.aiQuick(), null, 'ohne KI im Kontext: nicht bereit');
   cleanup();
 });
+
+test('Routen: Ausnahme – Datum gilt bis Tagesende, Vergangenheit und Unsinn werden abgelehnt', async () => {
+  const fs = require('fs');
+  const path = require('path');
+  const { activate } = require('../server/index');
+  const fh = fakeHost();
+  const k = 'php:8.1.0|CVE-2024-4577';
+  fs.mkdirSync(path.join(fh.data, 'vuln-watch'), { recursive: true });
+  const finding = { key: k, kind: 'vuln', item: 'php:8.1.0', id: 'CVE-2024-4577', level: 'critical', fix: { kind: 'patch', key: 'php-8.1', to: '8.1.30' } };
+  fs.writeFileSync(path.join(fh.data, 'vuln-watch', 'state.json'), JSON.stringify({ at: 1, findings: [finding], counts: null }));
+  const routes = {};
+  const reg = (m) => (p, ...h) => { routes[`${m} ${p}`] = h[h.length - 1]; };
+  const err = (status, msg) => Object.assign(new Error(msg), { status });
+  const timers = [];
+  fh.host.router = { get: reg('GET'), post: reg('POST'), put: reg('PUT'), delete: reg('DELETE') };
+  fh.host.error = err;
+  fh.host.on = (ev, fn) => timers.push(fn);
+  activate(fh.host);
+  const call = async (key, body, query = {}) => {
+    let out = null; let fail = null;
+    const res = { json: (x) => { out = x; } };
+    try { await routes[key]({ body, query }, res, (e) => { fail = e; }); } catch (e) { fail = e; }
+    if (fail) throw fail;
+    return out;
+  };
+  await assert.rejects(call('PUT /vuln-watch/ignore', { key: k, reason: 'x', until: 'morgen' }), /Invalid date/);
+  await assert.rejects(call('PUT /vuln-watch/ignore', { key: k, reason: 'x', until: '2001-01-01' }), /in the past/);
+  const day = new Date(Date.now() + 3 * 86400000);
+  const ymd = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+  await call('PUT /vuln-watch/ignore', { key: k, reason: 'nur intern', until: ymd });
+  const saved = JSON.parse(fs.readFileSync(path.join(fh.data, 'vuln-watch', 'ignores.json'), 'utf8'))[k];
+  assert.strictEqual(new Date(saved.until).getHours(), 23, 'Ausnahme gilt bis zum Ende des gewählten Tages');
+  for (const fn of timers) fn();
+});
+
+test('Ausnahme für ein ganzes Paket: deckt jeden Fund dieses Pakets im Dienst ab, mit Ablaufdatum', async () => {
+  const c = clock();
+  const fh = fakeHost();
+  const svc = createService(fh.host, { fetch: fakeFetch(sources()), now: c.now, sleep: c.sleep, collect: inventory, platform: 'linux' });
+  await svc.run();
+  const { pkgKey } = require('../server/assess');
+  const pk = pkgKey('project:shop', { ecosystem: 'npm', name: 'lodash' });
+  svc.store.set('ignores', { [pk]: { reason: 'nur Entwicklung', until: c.t + 86400000, at: c.t } });
+  svc.reassess();
+  const lo = svc.view().findings.filter((x) => x.pkg && x.pkg.name === 'lodash');
+  assert.ok(lo.length >= 1);
+  for (const f of lo) assert.deepStrictEqual([f.ignored.scope, f.ignored.key, f.ignored.until], ['package', pk, c.t + 86400000]);
+  assert.ok(svc.view().findings.filter((x) => x.item === 'web:apache').every((x) => !x.ignored), 'andere Dienste bleiben');
+});

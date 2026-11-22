@@ -154,6 +154,9 @@
   "{critical} critical · {high} high · {kev} exploited": "{critical} kritisch · {high} hoch · {kev} ausgenutzt",
   "Finding not found – check again.": "Fund nicht gefunden – bitte neu prüfen.",
   "Invalid date.": "Ungültiges Datum.",
+  "The date is in the past.": "Das Datum liegt in der Vergangenheit.",
+  "Details": "Details",
+  "Open at OSV": "Bei OSV öffnen",
   "Hostwerk cannot install an update for this right now.": "Hostwerk kann dafür gerade kein Update einspielen.",
   "Security updates are not available in this Hostwerk version.": "Sicherheits-Updates gibt es in dieser Hostwerk-Version nicht.",
   "The AI assistant is not ready.": "Der KI-Helfer ist nicht bereit.",
@@ -268,5 +271,18 @@
       "{} answers {}",
       "{} antwortet mit {}"
     ]
-  ]
+  ],
+  "ignored until {date}": "ignoriert bis {date}",
+  "whole package": "ganzes Paket",
+  "All {n} findings of {pkg} in {service} – also future ones": "Alle {n} Funde von {pkg} in {service} – auch künftige",
+  "All findings of {pkg} in {service} – also future ones": "Alle Funde von {pkg} in {service} – auch künftige",
+  "As CSV (spreadsheet)": "Als CSV (Tabelle)",
+  "As Markdown": "Als Markdown",
+  "Export": "Exportieren",
+  "ID": "ID",
+  "Package / version": "Paket / Version",
+  "Exception": "Ausnahme",
+  "Title": "Titel",
+  "yes": "ja",
+  "This finding belongs to no package.": "Dieser Fund gehört zu keinem Paket."
 }

@@ -132,7 +132,8 @@ class Sources {
       let fetched = 0;
       for (const id of todo.slice(0, MAX_DETAILS)) {
         const v = await this.net.json(`${OSV}/vulns/${encodeURIComponent(id)}`);
-        if (v) { vulns[id] = reduceOsv(v, keys); fetched++; }
+        if (!v) continue;
+        vulns[id] = reduceOsv(v, keys); fetched++;
         if (fetched % 50 === 0) this.store.set('osv-vulns', vulns);
       }
       this.store.set('osv-vulns', vulns);

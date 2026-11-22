@@ -17,7 +17,8 @@ function npmLock(text) {
   const out = [];
   if (j.packages && typeof j.packages === 'object') {
     for (const [key, p] of Object.entries(j.packages)) {
-      if (!key || !p || !p.version || p.link) continue;
+      // Nur eingebaute Pakete (node_modules/…) – Arbeitsbereiche („packages/web“) sind eigener Code, nicht aus npm
+      if (!key || !key.includes('node_modules/') || !p || !p.version || p.link) continue;
       const name = p.name || key.slice(key.lastIndexOf('node_modules/') + 'node_modules/'.length);
       if (!name || /^(file|link|git|https?):/.test(p.version)) continue;
       out.push({ ecosystem: 'npm', name, version: p.version, dev: !!(p.dev || p.devOptional) });

@@ -153,3 +153,15 @@ test('Bestand über stabile Dienste (SDK 3.3): Plugins, Compose- und Spiele-Imag
   assert.deepStrictEqual([gi.area, gi.why, gi.parent], ['games', 'no-database', 'game:valheim']);
   assert.strictEqual(items.filter((x) => x.image === 'redis:7.2.4-alpine').length, 1, 'Docker-Apps nicht doppelt');
 });
+
+test('package-lock v3 mit Arbeitsbereichen: eigene Pakete („packages/web“) werden nicht bei OSV abgefragt', () => {
+  const list = D.npmLock(JSON.stringify({ lockfileVersion: 3, packages: {
+    '': { name: 'mono', version: '1.0.0' },
+    'packages/web': { name: 'web', version: '1.0.0' },
+    'packages/some-very-long-name': { version: '0.1.0' },
+    'node_modules/web': { link: true, resolved: 'packages/web' },
+    'node_modules/lodash': { version: '4.17.20' },
+    'packages/web/node_modules/qs': { version: '6.7.0' },
+  } }));
+  assert.deepStrictEqual(list.map((p) => `${p.name}@${p.version}`), ['lodash@4.17.20', 'qs@6.7.0']);
+});

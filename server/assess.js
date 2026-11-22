@@ -100,6 +100,9 @@ function candidates(item, src) {
   return out;
 }
 
+/** Key of an exception for all findings of one package in one service. */
+const pkgKey = (itemId, pkg) => `${itemId}|pkg:${pkg.ecosystem || ''}:${pkg.name}`;
+
 function assess({ items, src, kev = {}, epss = {}, eol = null, pending = [], ignores = {}, platform = null, now = Date.now(), seen = {} }) {
   const findings = [];
   const unchecked = [];
@@ -129,8 +132,12 @@ function assess({ items, src, kev = {}, epss = {}, eol = null, pending = [], ign
       const k2 = c.cve && kev[c.cve] ? kev[c.cve] : null;
       const ep = c.cve && epss[c.cve] && epss[c.cve].epss != null ? epss[c.cve] : null;
       const key = `${item.id}|${k}`;
-      const ign = ignores[key];
+      // An exception for the whole package (e.g. a dev dependency) covers every finding of it – also ones found later
+      const pk = c.pkg ? pkgKey(item.id, c.pkg) : null;
+      const own = ignores[key];
+      const ign = own || (pk && ignores[pk]) || null;
       const ignored = ign && (!ign.until || ign.until > now) ? ign : null;
+      const ignKey = own ? key : pk;
       const hints = hintsFor(item, { ...main, details: [osv && osv.details, nvd && nvd.details].filter(Boolean).join(' '), others: (nvd && nvd.others) || [] }, { cvss, conditional: c.conditional, platform, pkg: c.pkg });
       if (c.rule === 'mc-log4shell') hints.push({ code: ['paper', 'spigot', 'purpur', 'folia'].includes(item.flavor) ? 'mc-patched-builds' : 'mc-vanilla' });
       findings.push({
@@ -146,7 +153,7 @@ function assess({ items, src, kev = {}, epss = {}, eol = null, pending = [], ign
         fix: fixFor(item, c.fixed, pending, c.pkg),
         hints, sources: [...new Set(recs.map((r) => r.source))],
         refs: [...new Map(recs.flatMap((r) => r.refs || []).map((r) => [r.url, r])).values()].slice(0, 12),
-        ignored: ignored ? { reason: ignored.reason || '', until: ignored.until || null, at: ignored.at || null } : null,
+        ignored: ignored ? { reason: ignored.reason || '', until: ignored.until || null, at: ignored.at || null, key: ignKey, scope: own ? 'finding' : 'package' } : null,
         expiredIgnore: !!(ign && !ignored),
         firstSeen: seen[key] || now,
       });
@@ -192,4 +199,4 @@ function summarize(findings) {
   return { counts, overall };
 }
 
-module.exports = { assess, summarize, candidates, hintsFor, fixFor, titleOf, RANK };
+module.exports = { pkgKey, assess, summarize, candidates, hintsFor, fixFor, titleOf, RANK };

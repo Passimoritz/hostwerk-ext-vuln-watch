@@ -18,7 +18,7 @@ const { Store } = require('./store');
 const { Net } = require('./net');
 const { Sources } = require('./sources');
 const { collect } = require('./inventory');
-const { assess, summarize } = require('./assess');
+const { assess, summarize, pkgKey } = require('./assess');
 const { PRODUCTS, MC_LOG4SHELL } = require('./catalog');
 const { LEVEL_LABEL } = require('./texts');
 
@@ -181,10 +181,16 @@ function activate(host) {
   r.get('/vuln-watch/detail', (req, res) => { const f = svc.detail(String(req.query.key || '')); if (!f) throw host.error(404, 'Finding not found – check again.'); res.json(f); });
   r.put('/vuln-watch/ignore', (req, res) => {
     const b = req.body || {};
-    const key = String(b.key || '');
-    if (!svc.detail(key)) throw host.error(404, 'Finding not found – check again.');
-    const until = b.until ? Date.parse(b.until) : null;
-    if (b.until && !Number.isFinite(until)) throw host.error(400, 'Invalid date.');
+    const f = svc.detail(String(b.key || ''));
+    if (!f) throw host.error(404, 'Finding not found – check again.');
+    // scope "package": one exception for every finding of this package in this service
+    if (b.scope === 'package' && !f.pkg) throw host.error(400, 'This finding belongs to no package.');
+    const key = b.scope === 'package' ? pkgKey(f.item, f.pkg) : f.key;
+    // Reines Datum (Datumsfeld der Oberfläche) gilt bis zum Ende dieses Tages, nicht nur bis Mitternacht davor
+    const u = b.until ? String(b.until) : '';
+    const until = u ? Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(u) ? `${u}T23:59:59` : u) : null;
+    if (u && !Number.isFinite(until)) throw host.error(400, 'Invalid date.');
+    if (u && until <= Date.now()) throw host.error(400, 'The date is in the past.');
     const ig = { ...svc.ignores() };
     ig[key] = { reason: String(b.reason || '').slice(0, 300), until: until || null, at: Date.now() };
     svc.store.set('ignores', ig);
@@ -203,7 +209,7 @@ function activate(host) {
       const key = String((req.body || {}).key || '');
       const f = (svc.view().findings || []).find((x) => x.fix && x.fix.kind === 'patch' && x.fix.key === key);
       if (!f) throw host.error(404, 'Hostwerk cannot install an update for this right now.');
-      const r2 = await svc.applyUpdate(key);
+      const r2 = (await svc.applyUpdate(key)) || {};
       await svc.run();
       res.json({ result: { ok: !!r2.ok, skipped: !!r2.skipped, error: r2.error || null }, ...svc.view() });
     } catch (e) { next(e); }
